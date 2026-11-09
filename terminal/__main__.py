@@ -2,14 +2,16 @@
 import functools
 import logging
 import sys
+import time
 from collections.abc import Awaitable, Callable
 
 import uvicorn
 
 from terminal.app import create_app, strip_symbols, watchlist_symbols
 from terminal.bus import Bus
+from terminal.events import FeedStatus
 from terminal.config import Config, load_config
-from terminal.feeds import crypto, yahoo
+from terminal.feeds import crypto, finnhub, yahoo
 from terminal.feeds.base import run_feed
 from terminal.prices import Prices
 from terminal.store import Store
@@ -29,13 +31,27 @@ def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[
         return [s for s in tracked() if s.asset == "crypto"]
 
     def polled() -> list[Symbol]:
-        return [s for s in tracked() if s.asset != "crypto"]
+        rest = [s for s in tracked() if s.asset != "crypto"]
+        return finnhub.split_live(rest)[1] if config.finnhub_key else rest
+
+    notices: list[FeedStatus] = []
+
+    def disabled(feed: str, key: str, where: str) -> None:
+        notices.append(FeedStatus(feed, "disabled", f"Set {key} in .env — {where}", time.time()))
+
+    async def announce() -> None:  # runs once the app is up, so the page hears about disabled feeds
+        for notice in notices:
+            bus.publish(notice)
 
     feeds = {
         "crypto": lambda: crypto.stream(bus, cryptos),
         "quotes": lambda: yahoo.poll_quotes(bus, polled),
     }
-    return [functools.partial(run_feed, name, bus, work) for name, work in feeds.items()]
+    if config.finnhub_key:
+        feeds["stocks"] = lambda: finnhub.stream(bus, config.finnhub_key, tracked)
+    else:
+        disabled("stocks", "FINNHUB_KEY", "free key at finnhub.io; stocks use slower Yahoo polling meanwhile")
+    return [announce] + [functools.partial(run_feed, name, bus, work) for name, work in feeds.items()]
 
 
 def main(argv: list[str]) -> int:
