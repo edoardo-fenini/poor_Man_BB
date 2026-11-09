@@ -1,0 +1,5 @@
+[
+ {"type":"subscriptions","channels":[{"name":"matches","product_ids":["BTC-USD"]}]},
+ {"type":"last_match","trade_id":10,"maker_order_id":"a","taker_order_id":"b","side":"buy","size":"0.5","price":"103200.01","product_id":"BTC-USD","sequence":50,"time":"2025-11-09T20:00:00.500000Z"},
+ {"type":"match","trade_id":11,"maker_order_id":"a","taker_order_id":"b","side":"sell","size":"1.25","price":"103201.00","product_id":"BTC-USD","sequence":51,"time":"2025-11-09T20:00:01.000000Z"}
+]

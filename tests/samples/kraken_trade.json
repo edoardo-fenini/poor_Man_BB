@@ -1,0 +1,7 @@
+[
+ {"method":"subscribe","result":{"channel":"trade","snapshot":true,"symbol":"BTC/USD"},"success":true,"time_in":"2025-11-09T20:00:00.000000Z","time_out":"2025-11-09T20:00:00.000100Z"},
+ {"channel":"heartbeat"},
+ {"channel":"trade","type":"update","data":[
+   {"symbol":"BTC/USD","side":"sell","price":103199.5,"qty":0.75,"ord_type":"market","trade_id":4665906,"timestamp":"2025-11-09T20:00:02.000000Z"},
+   {"symbol":"XBT/USD","side":"buy","price":103200.0,"qty":0.1,"ord_type":"limit","trade_id":4665907,"timestamp":"2025-11-09T20:00:02.500000Z"}]}
+]

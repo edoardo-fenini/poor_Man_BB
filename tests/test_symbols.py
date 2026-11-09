@@ -19,7 +19,7 @@ def test_resolve(text, id_, asset, yahoo):
 
 def test_crypto_provider_symbols():
     s = resolve("BTC")
-    assert (s.binance, s.coinbase, s.kraken) == ("BTCUSDT", "BTC-USD", "XBT/USD")
+    assert (s.binance, s.coinbase, s.kraken) == ("BTCUSDT", "BTC-USD", "BTC/USD")
     assert resolve("ETH").kraken == "ETH/USD"
 
 

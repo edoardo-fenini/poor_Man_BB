@@ -31,7 +31,8 @@ async def run_feed(
             if not done:
                 bus.publish(FeedStatus(name, "ok", "", time.time()))
             await task
-            detail = "feed stopped"
+            await sleep(base_delay)  # clean return (e.g. to resubscribe): restart, not an outage
+            continue
         except asyncio.CancelledError:
             task.cancel()
             raise

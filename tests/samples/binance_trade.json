@@ -1,0 +1,5 @@
+[
+ {"stream":"btcusdt@aggTrade","data":{"e":"aggTrade","E":1762718400100,"s":"BTCUSDT","a":26129,"p":"103250.50","q":"0.25000000","f":100,"l":105,"T":1762718400050,"m":true,"M":true}},
+ {"stream":"ethusdt@aggTrade","data":{"e":"aggTrade","E":1762718401100,"s":"ETHUSDT","a":26130,"p":"3400.10","q":"2.5","f":106,"l":106,"T":1762718401000,"m":false,"M":true}},
+ {"result":null,"id":1}
+]

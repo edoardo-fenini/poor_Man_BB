@@ -42,9 +42,11 @@ async def test_run_feed_restarts_work_that_returns():
     async def fake_sleep(d):
         pass
 
+    sub = bus.subscribe()
     with pytest.raises(asyncio.CancelledError):
         await run_feed("x", bus, work, sleep=fake_sleep)
     assert calls == 3
+    assert sub.queue.empty()  # a clean return (e.g. resubscribe) is not an outage
 
 
 async def test_run_feed_reports_ok_once_work_survives():

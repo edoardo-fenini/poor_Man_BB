@@ -47,8 +47,7 @@ def resolve(text: str) -> Symbol | None:
         return Symbol(flat, "fx", flat + "=X")
     if base := _crypto_base(text):
         pair = f"{base}-USD"
-        kraken = "XBT/USD" if base == "BTC" else f"{base}/USD"
-        return Symbol(pair, "crypto", pair, f"{base}USDT", pair, kraken)
+        return Symbol(pair, "crypto", pair, f"{base}USDT", pair, f"{base}/USD")
     if "/" in text or "=" in text or "^" in text:
         return None
     # Yahoo writes share classes with a dash (BRK-B) but keeps exchange suffixes (ENI.MI)
