@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from terminal.events import NewsItem, Tick
+from terminal.events import NewsItem, Tick, WhaleEvent
 
 WEB = Path(__file__).parent.parent / "terminal" / "web"
 
@@ -64,3 +64,18 @@ def test_news_update_replaces_row_instead_of_duplicating(page, live):
         live.publish(NewsItem("x3", "Tesla shares plunge on recall", "https://example.com/c", source, 2e9, ""))
     page.wait_for_function("document.querySelector('#news .news .src')?.textContent.includes('+2')")
     assert len(page.query_selector_all("#news .news")) == 1
+
+
+def test_whale_row_renders_and_filters(page, live):
+    live.publish(WhaleEvent("w1", "onchain", "BTC-USD", 1_234_000, "", "12 BTC <b>a</b> → b", "https://mempool.space/tx/ab", 2e9))
+    live.publish(WhaleEvent("w2", "insider", "ACME", 600_000, "buy", "DOE JANE bought 10,000 @ $60.00", "", 2e9 + 1))
+    page.wait_for_selector('#whales .row[data-id="w2"]')
+    row = page.text_content('#whales .row[data-id="w1"]')
+    assert "$1.2M" in row and "<b>a</b>" in row and "BTC" in row
+    assert page.get_attribute('#whales .row[data-id="w1"] a', "href") == "https://mempool.space/tx/ab"
+    assert "up" in page.get_attribute('#whales .row[data-id="w2"] .side', "class")
+    page.click('#whale-filters [data-type="onchain"]')
+    page.wait_for_selector('#whales .row[data-id="w1"]', state="hidden")
+    assert page.is_visible('#whales .row[data-id="w2"]')
+    page.click('#whales .row[data-id="w2"] .sym')
+    page.wait_for_function("document.querySelector('#chart-title').textContent.includes('ACME')")

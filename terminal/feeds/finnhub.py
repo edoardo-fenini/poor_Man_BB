@@ -14,7 +14,7 @@ from terminal.feeds.rss import clean, news_id
 from terminal.symbols import Symbol
 
 LIVE_LIMIT = 50  # free tier subscription cap
-_FOREIGN = re.compile(r"\.[A-Z]{2,}$")  # exchange suffix such as .MI or .L
+FOREIGN = re.compile(r"\.[A-Z]{2,}$")  # exchange suffix such as .MI or .L
 
 
 def parse_trades(msg: dict) -> list[Tick]:
@@ -28,7 +28,7 @@ def split_live(symbols: list[Symbol]) -> tuple[list[Symbol], list[Symbol]]:
     """(streamed live, left for polling). US stocks and ETFs go live, in watchlist order."""
     live, polled = [], []
     for s in symbols:
-        us_stock = s.asset == "stock" and not _FOREIGN.search(s.id)
+        us_stock = s.asset == "stock" and not FOREIGN.search(s.id)
         (live if us_stock and len(live) < LIVE_LIMIT else polled).append(s)
     return live, polled
 

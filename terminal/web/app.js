@@ -313,6 +313,44 @@ $("#news-weight").addEventListener("click", (e) => {
 });
 $("#news-watch").addEventListener("click", (e) => { news.watchOnly = !news.watchOnly; e.target.classList.toggle("on", news.watchOnly); repaintNews(); });
 
+// ---------------------------------------------------------------- whales
+const WHALE_TYPES = { crypto_trade: "TRADE", onchain: "ON-CHAIN", insider: "INSIDER", fund: "FUND 13F", volume: "VOLUME" };
+const whaleOff = new Set();
+
+function whaleRow(w) {
+  const row = el("div", null, "row" + (w.usd >= 1e7 ? " big" : ""));
+  row.dataset.id = w.id; row.dataset.ts = w.ts; row.dataset.type = w.type;
+  row.hidden = whaleOff.has(w.type);
+  const sym = el("span", w.symbol.replace("-USD", "") || "—", "sym");
+  if (w.symbol) sym.addEventListener("click", () => loadSymbol(w.symbol));
+  const detail = el("span", w.detail, "detail"); detail.title = w.detail;
+  const link = el("a", /^https?:\/\//.test(w.url) ? "↗" : "");
+  if (link.textContent) { link.href = w.url; link.target = "_blank"; link.rel = "noopener noreferrer"; }
+  row.append(el("span", fmtTime(w.ts), "dim"), el("span", WHALE_TYPES[w.type] || w.type, "t-" + w.type), sym,
+    el("span", fmtUsd(w.usd), "usd"),
+    el("span", w.side.toUpperCase(), "side " + (w.side === "buy" ? "up" : w.side === "sell" ? "down" : "dim")), detail, link);
+  return row;
+}
+
+function insertNewestFirst(box, row, cap) {
+  if (box.querySelector(`[data-id="${CSS.escape(row.dataset.id)}"]`)) return;
+  const after = [...box.children].find((r) => Number(r.dataset.ts) <= Number(row.dataset.ts));
+  box.insertBefore(row, after || null);
+  while (box.children.length > cap) box.lastChild.remove();
+}
+const onWhale = (w) => insertNewestFirst($("#whales"), whaleRow(w), 500);
+
+$("#whale-filters").replaceChildren(...Object.entries(WHALE_TYPES).map(([type, label]) => {
+  const b = el("button", label, "t-" + type);
+  b.dataset.type = type;
+  b.addEventListener("click", () => {
+    whaleOff.has(type) ? whaleOff.delete(type) : whaleOff.add(type);
+    b.classList.toggle("off", whaleOff.has(type));
+    document.querySelectorAll("#whales .row").forEach((r) => { r.hidden = whaleOff.has(r.dataset.type); });
+  });
+  return b;
+}));
+
 // ---------------------------------------------------------------- feed status
 const PANEL_FEEDS = {
   "tag-prices": ["crypto", "stocks", "quotes"],
@@ -336,15 +374,15 @@ function paintStatus() {
 }
 
 // ---------------------------------------------------------------- tabs
-document.querySelectorAll("#tabs button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
 function showTab(name) {
-  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
+  document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
   document.querySelectorAll("#bottom .tab").forEach((t) => { t.hidden = t.id !== name; });
   $("#whale-filters").hidden = name !== "whales";
 }
 
 // ---------------------------------------------------------------- live socket
-const handlers = { tick: onTick, news: onNews, status: (s) => { state.feeds[s.feed] = s; paintStatus(); } };
+const handlers = { tick: onTick, news: onNews, whale: onWhale, status: (s) => { state.feeds[s.feed] = s; paintStatus(); } };
 function connect() {
   const ws = new WebSocket(`ws://${location.host}/ws`);
   ws.onmessage = (m) => { const ev = JSON.parse(m.data); const h = handlers[ev.kind]; if (h) h(ev); };
@@ -365,6 +403,7 @@ async function start() {
   await Promise.all([loadWatchlist(), loadStrip()]);
   (await api("/api/events?kind=news&limit=300")).forEach((n) => news.items.set(n.id, n));
   repaintNews();
+  (await api("/api/events?kind=whale&limit=300")).reverse().forEach(onWhale);
   connect();
   setInterval(() => { paintStatus(); state.watchlist.forEach((w) => paintQuote(w.id, 0)); }, 5000);
   if (state.watchlist.length) loadSymbol(state.watchlist[0].id);

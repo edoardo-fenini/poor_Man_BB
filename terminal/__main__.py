@@ -11,7 +11,7 @@ from terminal.app import create_app, strip_symbols, watchlist_symbols
 from terminal.bus import Bus
 from terminal.events import FeedStatus
 from terminal.config import Config, load_config
-from terminal.feeds import crypto, finnhub, onchain, rss, sec, yahoo
+from terminal.feeds import crypto, finnhub, onchain, rss, sec, volume, yahoo
 from terminal.feeds.base import run_feed
 from terminal.prices import Prices
 from terminal.settings import load_settings
@@ -56,6 +56,7 @@ def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[
         "btc-onchain": lambda: onchain.btc_stream(bus, prices, settings),
         "quotes": lambda: yahoo.poll_quotes(bus, polled),
         "rss": lambda: rss.poll(bus, rss.load_feeds()),
+        "volume": lambda: volume.poll(bus, lambda: watchlist_symbols(store), settings),
     }
     if config.finnhub_key:
         feeds["stocks"] = lambda: finnhub.stream(bus, config.finnhub_key, tracked)
@@ -69,7 +70,9 @@ def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[
         disabled("eth-onchain", "ETHERSCAN_KEY", "free key at etherscan.io/myapikey")
     if config.sec_user_agent:
         feeds["sec-8k"] = lambda: sec.poll_8k(bus, config.sec_user_agent)
+        feeds["sec-filings"] = lambda: sec.poll_filings(bus, config.sec_user_agent)
     else:
+        disabled("sec-filings", "SEC_USER_AGENT", 'your contact, e.g. "Jane Doe jane@example.com" (SEC requires it)')
         disabled("sec-8k", "SEC_USER_AGENT", 'your contact, e.g. "Jane Doe jane@example.com" (SEC requires it)')
     return [announce] + [functools.partial(run_feed, name, bus, work) for name, work in feeds.items()]
 

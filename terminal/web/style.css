@@ -93,3 +93,16 @@ footer a { color: #777; }
 .chip { border: 1px solid currentColor; padding: 0 4px; cursor: pointer; font-size: 10px; }
 .chip.wl { background: #1c1500; font-weight: 700; }
 .why { margin: 3px 0 0; padding-left: 14px; color: var(--dim); font-size: 10px; }
+
+#whale-filters { display: flex; gap: 3px; margin-left: 12px; }
+#whale-filters button { border: 1px solid var(--line); font-weight: 400; }
+#whale-filters button.off { color: #555; text-decoration: line-through; }
+#whales .row { grid-template-columns: 92px 86px 78px 70px 40px minmax(0, 1fr) 16px; cursor: default; }
+#whales .sym { color: var(--white); font-weight: 600; cursor: pointer; }
+#whales .usd { text-align: right; color: var(--white); }
+#whales .big .usd { color: var(--text); font-weight: 700; }
+#whales .detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-crypto_trade { color: #4aa3ff; } .t-onchain { color: #c77dff; } .t-insider { color: #ffb000; }
+.t-fund { color: #8a8a8a; } .t-volume { color: #00d2c8; }
+
+[hidden] { display: none !important; }

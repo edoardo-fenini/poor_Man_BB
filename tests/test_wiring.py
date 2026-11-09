@@ -46,3 +46,10 @@ async def test_onchain_feeds_follow_the_etherscan_key():
     assert "btc-onchain" in names(without) and "eth-onchain" not in names(without)
     _, with_key = await statuses(Config("", "e", ""))
     assert "eth-onchain" in names(with_key)
+
+
+async def test_stock_whale_feeds():
+    out, without = await statuses(Config("", "", ""))
+    assert out["sec-filings"].state == "disabled" and "volume" in names(without)
+    _, with_contact = await statuses(Config("", "", "Jane Doe jane@example.com"))
+    assert "sec-filings" in names(with_contact)

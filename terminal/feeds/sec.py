@@ -2,12 +2,14 @@
 import asyncio
 import re
 import time
+import xml.etree.ElementTree as ET
+from collections import defaultdict
 
 import feedparser
 import httpx
 
 from terminal.bus import Bus
-from terminal.events import NewsItem
+from terminal.events import NewsItem, WhaleEvent
 from terminal.feeds.base import safe
 from terminal.feeds.rss import clean, entry_time, news_id
 
@@ -61,4 +63,116 @@ async def poll_8k(bus: Bus, user_agent: str, every: float = 60.0) -> None:
                 if item.id not in seen:
                     seen.add(item.id)
                     bus.publish(item)
+            await asyncio.sleep(every)
+
+
+# ---------------------------------------------------------------- insider and fund filings
+_XML_BLOCK = re.compile(rb"<XML>\s*(.*?)\s*</XML>", re.S)
+_NAMESPACE = re.compile(r"^\{[^}]*\}")
+MAX_FILING_BYTES = 30_000_000
+
+
+def parse_current(atom: bytes, now: float) -> list[dict]:
+    """New filings, one per accession (EDGAR lists a filing once per party)."""
+    seen, out = set(), []
+    for entry in _entries(atom, now):
+        if entry["accession"] not in seen:
+            seen.add(entry["accession"])
+            out.append(entry)
+    return out
+
+
+def filing_text_url(filing: dict) -> str:
+    """The complete submission text file, which embeds every XML document of the filing."""
+    return filing["url"].removesuffix("-index.htm") + ".txt"
+
+
+def _xml_documents(text: bytes) -> list[ET.Element]:
+    roots = []
+    for block in _XML_BLOCK.findall(text):
+        if b"<!DOCTYPE" in block or b"<!ENTITY" in block:
+            continue  # EDGAR XML never declares entities; refuse anything that tries to expand them
+        try:
+            root = ET.fromstring(block)
+        except ET.ParseError:
+            continue
+        for node in root.iter():
+            node.tag = _NAMESPACE.sub("", node.tag)
+        roots.append(root)
+    return roots
+
+
+def _value(node: ET.Element | None, path: str) -> str:
+    found = node.find(path) if node is not None else None
+    return (found.text or "").strip() if found is not None else ""
+
+
+def parse_form4(text: bytes, filing: dict) -> list[WhaleEvent]:
+    """Open-market insider purchases (code P) and sales (code S), summed per side."""
+    doc = next((r for r in _xml_documents(text) if r.tag == "ownershipDocument"), None)
+    if doc is None:
+        return []
+    symbol = _value(doc, "issuer/issuerTradingSymbol").upper()
+    owner = _value(doc, "reportingOwner/reportingOwnerId/rptOwnerName")
+    relation = doc.find("reportingOwner/reportingOwnerRelationship")
+    title = _value(relation, "officerTitle") or ("Director" if _value(relation, "isDirector") in ("1", "true") else
+                                                 "10% owner" if _value(relation, "isTenPercentOwner") in ("1", "true") else "")
+    shares, dollars = defaultdict(float), defaultdict(float)
+    for tx in doc.findall("nonDerivativeTable/nonDerivativeTransaction"):
+        side = {"P": "buy", "S": "sell"}.get(_value(tx, "transactionCoding/transactionCode"))
+        try:
+            count = float(_value(tx, "transactionAmounts/transactionShares/value"))
+            price = float(_value(tx, "transactionAmounts/transactionPricePerShare/value"))
+        except ValueError:
+            continue
+        if side and count > 0 and price > 0:
+            shares[side] += count
+            dollars[side] += count * price
+    who = clean(f"{owner} ({title})" if title else owner, 80)
+    return [
+        WhaleEvent(id=f"{filing['accession']}:{side}", type="insider", symbol=clean(symbol, 12), usd=dollars[side],
+                   side=side, detail=f"{who} {'bought' if side == 'buy' else 'sold'} {shares[side]:,.0f} "
+                                     f"@ ${dollars[side] / shares[side]:,.2f}",
+                   url=filing["url"], ts=filing["ts"])
+        for side in ("buy", "sell") if shares[side]
+    ]
+
+
+def parse_13f(text: bytes, filing: dict, top: int = 10) -> WhaleEvent | None:
+    """A fund's reported holdings: total value and its largest positions. Values are in dollars (2023+ filings)."""
+    table = next((r for r in _xml_documents(text) if r.tag == "informationTable"), None)
+    if table is None:
+        return None
+    holdings: dict[str, float] = defaultdict(float)
+    for row in table.findall("infoTable"):
+        try:
+            holdings[_value(row, "nameOfIssuer")] += float(_value(row, "value"))
+        except ValueError:
+            continue
+    total = sum(holdings.values())
+    if total <= 0:
+        return None
+    biggest = sorted(holdings.items(), key=lambda kv: (-kv[1], kv[0]))[:top]
+    positions = ", ".join(f"{clean(name, 40)} {value / total:.1%}" for name, value in biggest)
+    return WhaleEvent(id=filing["accession"], type="fund", symbol="", usd=total, side="",
+                      detail=f"{clean(filing['company'], 60)} 13F: {positions}", url=filing["url"], ts=filing["ts"])
+
+
+async def poll_filings(bus: Bus, user_agent: str, every: float = 60.0) -> None:
+    seen: set[str] = set()
+    first_pass = True
+    async with httpx.AsyncClient(timeout=30, headers=sec_headers(user_agent)) as client:
+        while True:
+            for form, parse in (("4", parse_form4), ("13F-HR", parse_13f)):
+                new = [f for f in safe(lambda b: parse_current(b, time.time()), await fetch_current(client, form, 100),
+                                       "sec-filings") if f["accession"] not in seen and f["form"].startswith(form)]
+                # on start-up read only the latest few, so a restart does not replay a hundred filings
+                for filing in new[:10] if first_pass else new:
+                    response = await client.get(filing_text_url(filing))
+                    await asyncio.sleep(0.25)  # SEC fair-access limit is 10 requests per second
+                    if response.status_code == 200 and len(response.content) <= MAX_FILING_BYTES:
+                        for whale in safe(lambda body: parse(body, filing), response.content, "sec-filings"):
+                            bus.publish(whale)
+                seen.update(f["accession"] for f in new)
+            first_pass = False
             await asyncio.sleep(every)
