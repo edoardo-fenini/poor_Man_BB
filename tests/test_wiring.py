@@ -20,10 +20,16 @@ async def test_missing_finnhub_key_is_announced_as_disabled():
     assert out["stocks"].state == "disabled" and "FINNHUB_KEY" in out["stocks"].detail
 
 
+def names(feeds):
+    return {f.args[0] for f in feeds[1:]}
+
+
 async def test_key_present_adds_the_stock_stream():
     out, with_key = await statuses(Config("k", "", ""))
     _, without = await statuses(Config("", "", ""))
-    assert "stocks" not in out and len(with_key) == len(without) + 1
+    assert "stocks" not in out
+    assert names(with_key) - names(without) == {"stocks", "finnhub-news"}
+    assert {"crypto", "quotes", "rss"} <= names(without)
 
 
 async def test_missing_sec_contact_disables_sec_feeds():
