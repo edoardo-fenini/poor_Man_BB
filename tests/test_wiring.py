@@ -38,3 +38,11 @@ async def test_missing_sec_contact_disables_sec_feeds():
     assert out["finnhub-news"].state == "disabled"
     out, _ = await statuses(Config("k", "", "Jane Doe jane@example.com"))
     assert "sec-8k" not in out and "finnhub-news" not in out
+
+
+async def test_onchain_feeds_follow_the_etherscan_key():
+    out, without = await statuses(Config("", "", ""))
+    assert out["eth-onchain"].state == "disabled" and "ETHERSCAN_KEY" in out["eth-onchain"].detail
+    assert "btc-onchain" in names(without) and "eth-onchain" not in names(without)
+    _, with_key = await statuses(Config("", "e", ""))
+    assert "eth-onchain" in names(with_key)

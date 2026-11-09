@@ -11,9 +11,10 @@ from terminal.app import create_app, strip_symbols, watchlist_symbols
 from terminal.bus import Bus
 from terminal.events import FeedStatus
 from terminal.config import Config, load_config
-from terminal.feeds import crypto, finnhub, rss, sec, yahoo
+from terminal.feeds import crypto, finnhub, onchain, rss, sec, yahoo
 from terminal.feeds.base import run_feed
 from terminal.prices import Prices
+from terminal.settings import load_settings
 from terminal.store import Store
 from terminal.symbols import Symbol
 
@@ -43,8 +44,16 @@ def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[
         for notice in notices:
             bus.publish(notice)
 
+    def settings() -> dict:
+        return load_settings(store)
+
+    def on_trade(trade: crypto.Trade) -> None:
+        if whale := crypto.big_trade(trade, settings()["whale_trade_usd"]):
+            bus.publish(whale)
+
     feeds = {
-        "crypto": lambda: crypto.stream(bus, cryptos),
+        "crypto": lambda: crypto.stream(bus, cryptos, on_trade),
+        "btc-onchain": lambda: onchain.btc_stream(bus, prices, settings),
         "quotes": lambda: yahoo.poll_quotes(bus, polled),
         "rss": lambda: rss.poll(bus, rss.load_feeds()),
     }
@@ -54,6 +63,10 @@ def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[
     else:
         disabled("stocks", "FINNHUB_KEY", "free key at finnhub.io; stocks use slower Yahoo polling meanwhile")
         disabled("finnhub-news", "FINNHUB_KEY", "free key at finnhub.io")
+    if config.etherscan_key:
+        feeds["eth-onchain"] = lambda: onchain.eth_poll(bus, config.etherscan_key, prices, settings)
+    else:
+        disabled("eth-onchain", "ETHERSCAN_KEY", "free key at etherscan.io/myapikey")
     if config.sec_user_agent:
         feeds["sec-8k"] = lambda: sec.poll_8k(bus, config.sec_user_agent)
     else:

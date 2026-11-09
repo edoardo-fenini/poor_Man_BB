@@ -9,7 +9,7 @@ from datetime import datetime
 import websockets
 
 from terminal.bus import Bus
-from terminal.events import Tick
+from terminal.events import Tick, WhaleEvent
 from terminal.feeds.base import safe
 from terminal.symbols import Symbol
 
@@ -124,3 +124,15 @@ async def stream(bus: Bus, symbols: Callable[[], list[Symbol]],
         except Exception as exc:
             errors.append(f"{name}: {type(exc).__name__} {exc}"[:80])
     raise ConnectionError("; ".join(errors))
+
+
+def big_trade(trade: Trade, min_usd: float) -> WhaleEvent | None:
+    usd = trade.price * trade.size
+    if usd < min_usd:
+        return None
+    return WhaleEvent(
+        id=f"{trade.source}:{trade.symbol}:{trade.ts}:{trade.price}:{trade.size}",
+        type="crypto_trade", symbol=trade.symbol, usd=usd, side=trade.side,
+        detail=f"{trade.size:,.4g} {trade.symbol.removesuffix('-USD')} @ {trade.price:,.2f} on {trade.source}",
+        url="", ts=trade.ts,
+    )
