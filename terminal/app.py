@@ -4,12 +4,15 @@ import contextlib
 import logging
 import time
 from collections.abc import Awaitable, Callable
+from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from terminal.brain.analysis import Analyser
+from terminal.brain.news_rules import RulesAnalyser
 from terminal.bus import Bus
 from terminal.config import Config
 from terminal.events import to_json
@@ -52,9 +55,27 @@ def create_app(
     prices: Prices,
     feeds: list[Callable[[], Awaitable[None]]] | None = None,
     history=yahoo.history,
+    analyser: Analyser | None = None,
 ) -> FastAPI:
     clients: set[asyncio.Queue] = set()
     status: dict[str, dict] = {}
+    analyser = analyser or RulesAnalyser()
+    # story id -> the stored story; the same headline from several outlets is one story
+    stories: dict[str, dict] = {n["id"]: n for n in store.recent("news", STORED["news"])}
+
+    def news_payload(item) -> dict | None:
+        """The story with its analysis, or None when this outlet already reported it."""
+        story = stories.get(item.id)
+        if story and item.source in story["outlets"]:
+            return None
+        outlets = (story["outlets"] if story else []) + [item.source]
+        analysis = analyser.analyse(item, {s.id for s in watchlist_symbols(store)}, len(outlets))
+        payload = {**(story or to_json(item)), "outlets": outlets, "analysis": asdict(analysis)}
+        stories[item.id] = payload
+        if len(stories) > 2 * STORED["news"]:
+            for key in list(stories)[: STORED["news"]]:
+                del stories[key]
+        return payload
 
     def broadcast(payload: dict) -> None:
         for queue in clients:
@@ -69,6 +90,11 @@ def create_app(
             prices.update(event)
         elif kind == "status":
             status[event.feed] = {"state": event.state, "detail": event.detail, "ts": event.ts}
+        elif kind == "news":
+            payload = news_payload(event)
+            if payload is None:
+                return
+            store.add("news", event.id, payload["ts"], payload, replace=True)
         elif kind in STORED:
             if not store.add(kind, _event_key(payload), payload["ts"], payload):
                 return  # already seen: do not show it twice

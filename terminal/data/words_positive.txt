@@ -1,0 +1,74 @@
+# Finance-flavoured positive words and phrases, one per line. Phrases are matched before single words.
+rate cut
+rate cuts
+cuts rates
+cut rates
+inflation cools
+inflation eases
+inflation slows
+raises forecast
+raises guidance
+raises outlook
+lifts forecast
+lifts guidance
+boosts forecast
+price target raised
+all-time high
+record high
+better than expected
+tops estimates
+tops expectations
+ahead of expectations
+share buyback
+stock buyback
+dividend increase
+wins approval
+wins contract
+beat
+jump
+surge
+soar
+rally
+rebound
+recover
+gain
+climb
+rise
+upgrade
+outperform
+strong
+strength
+robust
+record
+boom
+growth
+profit
+profitable
+approval
+approve
+breakthrough
+win
+success
+successful
+exceed
+bullish
+optimism
+optimistic
+upbeat
+improve
+improvement
+boost
+accelerate
+expand
+expansion
+surpass
+buyback
+rebound
+upside
+progress
+achieve
+positive
+confident
+confidence
+booming
+outpace

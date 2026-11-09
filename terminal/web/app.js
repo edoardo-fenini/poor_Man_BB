@@ -251,6 +251,68 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "/" && document.activeElement !== $("#cmd") && !$("#settings").open) { e.preventDefault(); $("#cmd").focus(); }
 });
 
+// ---------------------------------------------------------------- news
+const news = { items: new Map(), minWeight: 1, watchOnly: false };
+const arrow = (d) => (d > 0 ? "▲" : d < 0 ? "▼" : "•");
+
+function chip(symbol, direction) {
+  const c = el("span", `${symbol.replace("-USD", "")} ${arrow(direction)}`, "chip " + dirClass(direction));
+  c.dataset.symbol = symbol;
+  if (state.watchlist.some((w) => w.id === symbol)) c.classList.add("wl");
+  c.addEventListener("click", (e) => { e.stopPropagation(); loadSymbol(symbol); });
+  return c;
+}
+
+function newsRow(n) {
+  const a = n.analysis, row = el("div", null, `news w${a.weight}`);
+  row.dataset.id = n.id; row.dataset.ts = n.ts;
+  const head = el("div", null, "head");
+  const more = n.outlets.length > 1 ? ` +${n.outlets.length - 1}` : "";
+  const src = el("span", n.source + more, "src");
+  src.title = n.outlets.join(", ");
+  head.append(el("span", fmtTime(n.ts)), src, el("span", "▮".repeat(a.weight) + "▯".repeat(5 - a.weight), "weight"));
+  const title = el("div", null, "title");
+  title.append(el("span", arrow(a.sentiment), "mood " + dirClass(a.sentiment)), document.createTextNode(n.title));
+  const link = el("a", "↗");
+  if (/^https?:\/\//.test(n.url)) { link.href = n.url; link.target = "_blank"; link.rel = "noopener noreferrer"; }
+  link.addEventListener("click", (e) => e.stopPropagation());
+  title.append(link);
+  const chips = el("div", null, "chips");
+  chips.append(...a.impacts.slice(0, 12).map((i) => chip(i.symbol, i.direction)));
+  const why = el("ul", null, "why"); why.hidden = true;
+  why.append(...a.reasons.map((r) => el("li", r)));
+  if (n.summary) why.prepend(el("li", n.summary));
+  title.addEventListener("click", () => { why.hidden = !why.hidden; });
+  row.append(head, title, chips, why);
+  return row;
+}
+
+function newsVisible(n) {
+  if (n.analysis.weight < news.minWeight) return false;
+  return !news.watchOnly || n.analysis.impacts.some((i) => state.watchlist.some((w) => w.id === i.symbol));
+}
+
+function onNews(n) {
+  news.items.set(n.id, n);
+  const box = $("#news"), old = box.querySelector(`[data-id="${CSS.escape(n.id)}"]`);
+  if (!newsVisible(n)) { if (old) old.remove(); return; }
+  const row = newsRow(n);
+  if (old) { old.replaceWith(row); return; }
+  const after = [...box.children].find((r) => Number(r.dataset.ts) <= n.ts);   // newest first
+  box.insertBefore(row, after || null);
+  while (box.children.length > 300) box.lastChild.remove();
+}
+
+function repaintNews() {
+  const sorted = [...news.items.values()].sort((a, b) => b.ts - a.ts).filter(newsVisible).slice(0, 300);
+  $("#news").replaceChildren(...sorted.map(newsRow));
+}
+$("#news-weight").addEventListener("click", (e) => {
+  news.minWeight = (news.minWeight % 4) + 1;
+  e.target.textContent = `W${news.minWeight}+`; e.target.classList.toggle("on", news.minWeight > 1); repaintNews();
+});
+$("#news-watch").addEventListener("click", (e) => { news.watchOnly = !news.watchOnly; e.target.classList.toggle("on", news.watchOnly); repaintNews(); });
+
 // ---------------------------------------------------------------- feed status
 const PANEL_FEEDS = {
   "tag-prices": ["crypto", "stocks", "quotes"],
@@ -282,7 +344,7 @@ function showTab(name) {
 }
 
 // ---------------------------------------------------------------- live socket
-const handlers = { tick: onTick, status: (s) => { state.feeds[s.feed] = s; paintStatus(); } };
+const handlers = { tick: onTick, news: onNews, status: (s) => { state.feeds[s.feed] = s; paintStatus(); } };
 function connect() {
   const ws = new WebSocket(`ws://${location.host}/ws`);
   ws.onmessage = (m) => { const ev = JSON.parse(m.data); const h = handlers[ev.kind]; if (h) h(ev); };
@@ -301,6 +363,8 @@ function connect() {
 async function start() {
   initChart();
   await Promise.all([loadWatchlist(), loadStrip()]);
+  (await api("/api/events?kind=news&limit=300")).forEach((n) => news.items.set(n.id, n));
+  repaintNews();
   connect();
   setInterval(() => { paintStatus(); state.watchlist.forEach((w) => paintQuote(w.id, 0)); }, 5000);
   if (state.watchlist.length) loadSymbol(state.watchlist[0].id);

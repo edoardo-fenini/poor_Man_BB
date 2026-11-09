@@ -77,3 +77,19 @@ footer a { color: #777; }
 #banner.warn { background: var(--text); color: #000; }
 #banner.critical { background: var(--down); color: #fff; animation: blink 1s 6; }
 @keyframes blink { 50% { opacity: .55; } }
+
+.right { margin-left: auto; display: flex; gap: 4px; }
+.panel h2 .right button { border: 1px solid var(--line); font-weight: 400; }
+.news { padding: 3px 8px; border-bottom: 1px solid #151515; }
+.news .head { display: flex; gap: 8px; color: var(--dim); font-size: 10px; }
+.news .weight { letter-spacing: -1px; }
+.news.w4 .weight, .news.w5 .weight { color: var(--down); }
+.news .title { color: var(--white); cursor: pointer; overflow-wrap: anywhere; }
+.news.w1 .title { color: #9a9a9a; }
+.news.w4 .title, .news.w5 .title { font-weight: 700; }
+.news .mood { font-weight: 700; margin-right: 4px; }
+.news a { margin-left: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.chip { border: 1px solid currentColor; padding: 0 4px; cursor: pointer; font-size: 10px; }
+.chip.wl { background: #1c1500; font-weight: 700; }
+.why { margin: 3px 0 0; padding-left: 14px; color: var(--dim); font-size: 10px; }

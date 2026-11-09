@@ -13,10 +13,13 @@ class Store:
             "CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT);"
         )
 
-    def add(self, kind: str, key: str, ts: float, data: dict) -> bool:
+    def add(self, kind: str, key: str, ts: float, data: dict, replace: bool = False) -> bool:
+        """Store an event. Returns True if the key is new. `replace` updates an existing row's data."""
         cur = self.db.execute(
             "INSERT OR IGNORE INTO events VALUES(?,?,?,?)", (kind, key, ts, json.dumps(data))
         )
+        if cur.rowcount == 0 and replace:
+            self.db.execute("UPDATE events SET json=? WHERE kind=? AND key=?", (json.dumps(data), kind, key))
         return cur.rowcount == 1
 
     def recent(self, kind: str, limit: int = 200) -> list[dict]:

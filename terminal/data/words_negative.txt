@@ -1,0 +1,105 @@
+# Finance-flavoured negative words and phrases, one per line. Phrases are matched before single words.
+cuts forecast
+cuts guidance
+cuts outlook
+lowers forecast
+lowers guidance
+slashes forecast
+slashes guidance
+cuts jobs
+job cuts
+pull back
+pulls back
+price target cut
+export controls
+export curbs
+export ban
+profit warning
+misses estimates
+misses expectations
+falls short
+worse than expected
+below expectations
+short seller
+class action
+chapter 11
+going concern
+data breach
+rate hike
+rate hikes
+miss
+fall
+drop
+plunge
+tumble
+slump
+sink
+slide
+crash
+collapse
+decline
+downgrade
+underperform
+weak
+weakness
+loss
+lose
+recall
+faulty
+defect
+lawsuit
+sue
+probe
+investigation
+investigate
+fraud
+scandal
+bankrupt
+bankruptcy
+default
+layoff
+grounded
+blowout
+warn
+warning
+fear
+concern
+risk
+crisis
+recession
+slowdown
+shortage
+ban
+sanction
+penalty
+fined
+halt
+suspend
+delay
+steal
+stolen
+hack
+hacker
+hacked
+breach
+selloff
+sell-off
+bearish
+pessimism
+turmoil
+panic
+plummet
+shrink
+contraction
+deficit
+tariff
+downturn
+disappoint
+disappointing
+trouble
+struggle
+cut-price
+liquidation
+insolvent
+resign
+ousted

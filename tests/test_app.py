@@ -60,6 +60,29 @@ def test_news_and_whale_events_are_persisted(ctx):
     assert ctx.get("/api/events", params={"kind": "tick"}).status_code == 400
 
 
+def news(ctx):
+    return ctx.get("/api/events", params={"kind": "news"}).json()
+
+
+def test_news_is_stored_with_its_analysis(ctx):
+    ctx.portal.call(ctx.bus.publish, NewsItem("n1", "Apple shares jump after iPhone sales beat estimates", "http://x", "src", 5.0, ""))
+    item = wait_for(lambda: news(ctx))[0]
+    assert item["analysis"]["sentiment"] == 1 and item["analysis"]["weight"] == 2  # +1: AAPL is on the watchlist
+    assert {"symbol": "AAPL", "direction": 1} == {k: item["analysis"]["impacts"][0][k] for k in ("symbol", "direction")}
+    assert item["outlets"] == ["src"]
+
+
+def test_same_story_from_more_outlets_raises_weight_and_updates_in_place(ctx):
+    title = "Tesla shares plunge on recall"
+    with ctx.websocket_connect("/ws") as ws:
+        for source in ("a", "b", "c", "c"):
+            ctx.portal.call(ctx.bus.publish, NewsItem("n2", title, "http://x", source, 5.0, ""))
+        weights = [ws.receive_json()["analysis"]["weight"] for _ in range(3)]
+    assert weights == [3, 3, 4]            # third outlet adds a point; the repeat from "c" sends nothing
+    stored = news(ctx)
+    assert len(stored) == 1 and stored[0]["outlets"] == ["a", "b", "c"] and stored[0]["source"] == "a"
+
+
 def test_status_reflects_feedstatus(ctx):
     ctx.portal.call(ctx.bus.publish, FeedStatus("crypto", "down", "boom", 9.0))
     status = wait_for(lambda: ctx.get("/api/status").json())

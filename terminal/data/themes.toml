@@ -1,0 +1,123 @@
+# Themes: keywords -> affected assets. direction: 1 up, -1 down, 0 affected but direction unclear.
+# A keyword with a capital letter is matched case-sensitively ("Fed" will not match "fed up").
+# Order matters: when two themes name the same asset, the first one wins. Put specific themes first.
+
+[[theme]]
+name = "rate cuts / dovish"
+keywords = ["rate cut", "rate cuts", "cuts rates", "cut rates", "cutting rates", "dovish", "monetary easing", "lowers rates", "lower interest rates"]
+impacts = [{symbol = "TLT", direction = 1}, {symbol = "^TNX", direction = -1}, {symbol = "QQQ", direction = 1}, {symbol = "GC=F", direction = 1}, {symbol = "DX-Y.NYB", direction = -1}]
+
+[[theme]]
+name = "rate hikes / hawkish"
+keywords = ["rate hike", "rate hikes", "hikes rates", "raises rates", "raise rates", "hawkish", "tightening cycle", "higher for longer"]
+impacts = [{symbol = "TLT", direction = -1}, {symbol = "^TNX", direction = 1}, {symbol = "QQQ", direction = -1}, {symbol = "GC=F", direction = -1}, {symbol = "DX-Y.NYB", direction = 1}]
+
+[[theme]]
+name = "central banks"
+keywords = ["Fed", "FOMC", "Federal Reserve", "Powell", "ECB", "Lagarde", "Bank of Japan", "BOJ", "Bank of England", "interest rates"]
+impacts = [{symbol = "TLT", direction = 0}, {symbol = "^TNX", direction = 0}, {symbol = "DX-Y.NYB", direction = 0}, {symbol = "SPY", direction = 0}]
+
+[[theme]]
+name = "inflation hot"
+keywords = ["inflation rises", "inflation accelerates", "inflation jumps", "hotter than expected", "sticky inflation"]
+impacts = [{symbol = "TLT", direction = -1}, {symbol = "^TNX", direction = 1}, {symbol = "GC=F", direction = 1}, {symbol = "QQQ", direction = -1}]
+
+[[theme]]
+name = "inflation cooling"
+keywords = ["inflation cools", "inflation eases", "inflation slows", "cooler than expected", "disinflation"]
+impacts = [{symbol = "TLT", direction = 1}, {symbol = "^TNX", direction = -1}, {symbol = "QQQ", direction = 1}]
+
+[[theme]]
+name = "inflation data"
+keywords = ["CPI", "PCE", "inflation", "consumer prices", "producer prices"]
+impacts = [{symbol = "TLT", direction = 0}, {symbol = "^TNX", direction = 0}, {symbol = "SPY", direction = 0}]
+
+[[theme]]
+name = "jobs data"
+keywords = ["nonfarm payrolls", "payrolls", "jobs report", "unemployment rate", "jobless claims"]
+impacts = [{symbol = "SPY", direction = 0}, {symbol = "^TNX", direction = 0}, {symbol = "DX-Y.NYB", direction = 0}]
+
+[[theme]]
+name = "oil supply cut"
+keywords = ["output cut", "output cuts", "production cut", "production cuts", "cuts output", "cut output", "supply disruption", "pipeline attack", "refinery fire", "oil embargo"]
+impacts = [{symbol = "CL=F", direction = 1}, {symbol = "BZ=F", direction = 1}, {symbol = "XLE", direction = 1}, {symbol = "XOM", direction = 1}, {symbol = "JETS", direction = -1}]
+
+[[theme]]
+name = "oil supply up"
+keywords = ["output hike", "raises output", "raise output", "boosts output", "production increase", "oil glut", "supply glut"]
+impacts = [{symbol = "CL=F", direction = -1}, {symbol = "BZ=F", direction = -1}, {symbol = "XLE", direction = -1}, {symbol = "JETS", direction = 1}]
+
+[[theme]]
+name = "oil market"
+keywords = ["OPEC", "OPEC+", "crude", "oil prices", "barrel", "refinery", "pipeline"]
+impacts = [{symbol = "CL=F", direction = 0}, {symbol = "BZ=F", direction = 0}, {symbol = "XLE", direction = 0}]
+
+[[theme]]
+name = "chip export controls"
+keywords = ["chip export", "export controls", "export curbs", "export ban", "chip ban", "chip curbs", "semiconductor restrictions", "entity list"]
+impacts = [{symbol = "NVDA", direction = -1}, {symbol = "AMD", direction = -1}, {symbol = "TSM", direction = -1}, {symbol = "ASML", direction = -1}, {symbol = "SMH", direction = -1}]
+
+[[theme]]
+name = "AI spending"
+keywords = ["AI spending", "AI capex", "data center spending", "AI chips", "AI demand", "data centers", "AI infrastructure"]
+impacts = [{symbol = "NVDA", direction = 0}, {symbol = "AVGO", direction = 0}, {symbol = "SMH", direction = 0}, {symbol = "MSFT", direction = 0}, {symbol = "SMCI", direction = 0}]
+
+[[theme]]
+name = "bank stress"
+keywords = ["bank run", "bank failure", "bank collapse", "deposit flight", "bank bailout", "banking crisis", "FDIC seizes"]
+impacts = [{symbol = "KRE", direction = -1}, {symbol = "XLF", direction = -1}, {symbol = "GC=F", direction = 1}, {symbol = "TLT", direction = 1}, {symbol = "^VIX", direction = 1}]
+
+[[theme]]
+name = "tariffs and trade war"
+keywords = ["tariff", "tariffs", "trade war", "import duties", "retaliatory", "trade deal"]
+impacts = [{symbol = "SPY", direction = 0}, {symbol = "FXI", direction = 0}, {symbol = "DX-Y.NYB", direction = 0}, {symbol = "HG=F", direction = 0}]
+
+[[theme]]
+name = "crypto hack"
+keywords = ["crypto hack", "exchange hack", "hackers steal", "exploit drains", "bridge exploit", "rug pull", "stolen crypto", "crypto heist"]
+impacts = [{symbol = "BTC-USD", direction = -1}, {symbol = "ETH-USD", direction = -1}, {symbol = "COIN", direction = -1}]
+
+[[theme]]
+name = "crypto ETF approval"
+keywords = ["ETF approval", "approves spot", "spot bitcoin ETF", "spot ether ETF", "ETF inflows"]
+impacts = [{symbol = "BTC-USD", direction = 1}, {symbol = "ETH-USD", direction = 1}, {symbol = "COIN", direction = 1}, {symbol = "MSTR", direction = 1}]
+
+[[theme]]
+name = "crypto regulation"
+keywords = ["crypto regulation", "crypto crackdown", "SEC sues", "crypto ban", "stablecoin bill", "crypto bill", "crypto exchange"]
+impacts = [{symbol = "BTC-USD", direction = 0}, {symbol = "ETH-USD", direction = 0}, {symbol = "COIN", direction = 0}]
+
+[[theme]]
+name = "safe haven demand"
+keywords = ["safe haven", "safe-haven", "flight to safety", "risk-off", "market turmoil", "market panic"]
+impacts = [{symbol = "GC=F", direction = 1}, {symbol = "TLT", direction = 1}, {symbol = "^VIX", direction = 1}, {symbol = "SPY", direction = -1}]
+
+[[theme]]
+name = "China stimulus"
+keywords = ["China stimulus", "Beijing stimulus", "PBOC cuts", "PBOC eases", "China property support"]
+impacts = [{symbol = "FXI", direction = 1}, {symbol = "KWEB", direction = 1}, {symbol = "HG=F", direction = 1}, {symbol = "BHP", direction = 1}]
+
+[[theme]]
+name = "shipping disruption"
+keywords = ["Red Sea", "Suez Canal", "Strait of Hormuz", "Panama Canal", "shipping disruption", "container rates", "port strike"]
+impacts = [{symbol = "ZIM", direction = 1}, {symbol = "BZ=F", direction = 1}, {symbol = "FDX", direction = 0}, {symbol = "UPS", direction = 0}]
+
+[[theme]]
+name = "natural gas supply"
+keywords = ["gas supply", "LNG", "gas pipeline", "gas storage", "Nord Stream", "gas prices"]
+impacts = [{symbol = "NG=F", direction = 0}, {symbol = "UNG", direction = 0}, {symbol = "EQNR", direction = 0}]
+
+[[theme]]
+name = "war and defence"
+keywords = ["airstrike", "missile strike", "invasion", "military escalation", "defense spending", "defence spending", "arms deal", "NATO"]
+impacts = [{symbol = "ITA", direction = 1}, {symbol = "LMT", direction = 1}, {symbol = "RTX", direction = 1}, {symbol = "GC=F", direction = 1}]
+
+[[theme]]
+name = "government shutdown and debt"
+keywords = ["government shutdown", "debt ceiling", "credit rating downgrade", "Treasury auction", "debt default"]
+impacts = [{symbol = "TLT", direction = 0}, {symbol = "^TNX", direction = 0}, {symbol = "DX-Y.NYB", direction = 0}, {symbol = "^VIX", direction = 1}]
+
+[[theme]]
+name = "weight-loss drugs"
+keywords = ["weight-loss drug", "weight loss drug", "GLP-1", "Ozempic", "Wegovy", "Zepbound", "Mounjaro"]
+impacts = [{symbol = "LLY", direction = 0}, {symbol = "NVO", direction = 0}]

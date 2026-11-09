@@ -33,3 +33,11 @@ def test_prune_keeps_newest():
 
 def test_to_json_has_kind():
     assert to_json(Tick("A", 1, 2, 3, "x"))["kind"] == "tick"
+
+
+def test_add_with_replace_overwrites_data_but_reports_not_new():
+    s = Store(":memory:")
+    s.add("news", "k", 1.0, {"w": 1})
+    assert s.add("news", "k", 1.0, {"w": 2}, replace=True) is False
+    assert s.recent("news") == [{"w": 2}]
+    assert s.add("news", "k2", 2.0, {"w": 3}, replace=True) is True
