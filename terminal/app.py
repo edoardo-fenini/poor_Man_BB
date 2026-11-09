@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from terminal.brain.analysis import Analyser
+from terminal.brain.conflicts import Zones, load_zones
 from terminal.brain.news_rules import RulesAnalyser
 from terminal.bus import Bus
 from terminal.config import Config
@@ -60,6 +61,7 @@ def create_app(
     clients: set[asyncio.Queue] = set()
     status: dict[str, dict] = {}
     analyser = analyser or RulesAnalyser()
+    zones = Zones(load_zones(), store)
     # story id -> the stored story; the same headline from several outlets is one story
     stories: dict[str, dict] = {n["id"]: n for n in store.recent("news", STORED["news"])}
 
@@ -98,6 +100,8 @@ def create_app(
         elif kind in STORED:
             if not store.add(kind, _event_key(payload), payload["ts"], payload):
                 return  # already seen: do not show it twice
+            if kind == "conflict":
+                zones.record(event)
         broadcast(payload)
 
     async def pump() -> None:
@@ -186,6 +190,10 @@ def create_app(
             return _error(400, "expected an object")
         store.set("settings", {**store.get("settings", {}), **body})
         return get_settings()
+
+    @app.get("/api/conflicts")
+    def get_conflicts():
+        return zones.state()
 
     @app.get("/api/status")
     def get_status():

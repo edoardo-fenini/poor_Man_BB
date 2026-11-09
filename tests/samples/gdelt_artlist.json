@@ -1,0 +1,7 @@
+{"articles":[
+ {"url":"https://example.com/1","url_mobile":"","title":"Missile strike hits port city as tensions rise","seendate":"20251109T200000Z","socialimage":"","domain":"example.com","language":"English","sourcecountry":"United States"},
+ {"url":"https://example.org/2","title":"Missile strike hits port city as tensions rise","seendate":"20251109T201500Z","domain":"example.org","language":"English","sourcecountry":"United Kingdom"},
+ {"url":"https://example.com/3","title":"New sanctions announced on oil exports","seendate":"20251109T203000Z","domain":"example.com","language":"English","sourcecountry":"United States"},
+ {"url":"javascript:alert(1)","title":"Bad link","seendate":"20251109T203000Z"},
+ {"url":"https://example.com/5","title":"","seendate":"20251109T203000Z"}
+]}

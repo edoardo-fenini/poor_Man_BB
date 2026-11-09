@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from terminal.events import NewsItem, Tick, WhaleEvent
+from terminal.events import ConflictEvent, NewsItem, Tick, WhaleEvent
 
 WEB = Path(__file__).parent.parent / "terminal" / "web"
 
@@ -79,3 +79,15 @@ def test_whale_row_renders_and_filters(page, live):
     assert page.is_visible('#whales .row[data-id="w2"]')
     page.click('#whales .row[data-id="w2"] .sym')
     page.wait_for_function("document.querySelector('#chart-title').textContent.includes('ACME')")
+
+
+def test_conflicts_tab_shows_zone_heat_and_headlines(page, live):
+    import time
+    live.publish(ConflictEvent("k1", "Taiwan Strait", "clash", "Jets <i>cross</i> median line", "https://example.com/k1", time.time()))
+    page.click('#tabs [data-tab="conflicts"]')
+    page.wait_for_function("""() => { const r = document.querySelector('#zones [data-zone="Taiwan Strait"]');
+        return r && r.querySelector('.count').textContent.trim() === '1'; }""")
+    assert page.query_selector('#zones [data-zone="Taiwan Strait"] .chip[data-symbol="TSM"]')
+    page.click('#zones [data-zone="Taiwan Strait"] .zone')
+    page.wait_for_selector("#zone-news .row")
+    assert "<i>cross</i>" in page.text_content("#zone-news .row")

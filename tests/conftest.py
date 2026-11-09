@@ -85,6 +85,7 @@ def page(browser, live):
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(live.url)
     page.wait_for_selector("#watchlist .row")
+    page.wait_for_selector("body[data-live]")  # the live channel is open: published events will arrive
     yield page
     page.close()
     assert errors == [], errors

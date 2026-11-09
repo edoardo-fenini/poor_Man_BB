@@ -1,6 +1,6 @@
 import time
 
-from terminal.events import FeedStatus, NewsItem, Tick, WhaleEvent
+from terminal.events import ConflictEvent, FeedStatus, NewsItem, Tick, WhaleEvent
 
 
 def wait_for(fn, timeout=2.0):
@@ -91,3 +91,13 @@ def test_status_reflects_feedstatus(ctx):
 
 def test_index_served(ctx):
     assert ctx.get("/").status_code == 200
+
+
+def test_conflict_events_feed_zone_heat(ctx):
+    now = time.time()
+    for i in range(3):
+        ctx.portal.call(ctx.bus.publish, ConflictEvent(f"c{i}", "Taiwan Strait", "clash", f"t{i}", "https://e.com", now))
+    ctx.portal.call(ctx.bus.publish, ConflictEvent("c0", "Taiwan Strait", "clash", "t0", "https://e.com", now))  # repeat
+    zones = wait_for(lambda: [z for z in ctx.get("/api/conflicts").json() if z["count"] == 3])
+    assert zones[0]["zone"] == "Taiwan Strait" and {"symbol": "TSM", "direction": -1} in zones[0]["assets"]
+    assert len(ctx.get("/api/conflicts").json()) >= 8

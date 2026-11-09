@@ -351,6 +351,48 @@ $("#whale-filters").replaceChildren(...Object.entries(WHALE_TYPES).map(([type, l
   return b;
 }));
 
+// ---------------------------------------------------------------- conflicts
+const conflicts = { events: [], zone: null, timer: null };
+
+function paintZoneNews() {
+  const rows = conflicts.events.filter((e) => !conflicts.zone || e.zone === conflicts.zone).slice(0, 200).map((e) => {
+    const row = el("div", null, "row");
+    const link = el("a", "↗");
+    if (/^https?:\/\//.test(e.url)) { link.href = e.url; link.target = "_blank"; link.rel = "noopener noreferrer"; }
+    const title = el("span", e.title, "title"); title.title = e.zone + ": " + e.title;
+    row.append(el("span", fmtTime(e.ts), "dim"), el("span", e.type.toUpperCase(), "dim"), title, link);
+    return row;
+  });
+  $("#zone-news").replaceChildren(...rows);
+}
+
+async function refreshZones() {
+  const zones = await api("/api/conflicts");
+  zones.sort((a, b) => b.ratio - a.ratio || b.count - a.count);
+  $("#zones").replaceChildren(...zones.map((z) => {
+    const row = el("div", null, "row" + (z.zone === conflicts.zone ? " sel" : ""));
+    row.dataset.zone = z.zone;
+    const name = el("span", z.zone, "zone");
+    name.addEventListener("click", () => { conflicts.zone = conflicts.zone === z.zone ? null : z.zone; refreshZones(); paintZoneNews(); });
+    const trend = z.ratio === 0 ? "new" : (z.ratio >= 1 ? "▲ " : "▼ ") + z.ratio.toFixed(1) + "×";
+    const ratio = el("span", trend, z.ratio >= 2 ? "hot" : "dim");
+    ratio.title = "Headlines today vs the average of the last 7 days";
+    const chips = el("span", null, "chips");
+    chips.append(...z.assets.map((a) => chip(a.symbol, a.direction)));
+    row.append(name, el("span", z.count, "count"), ratio, chips);
+    return row;
+  }));
+}
+
+function onConflict(e) {
+  if (!conflicts.events.some((x) => x.id === e.id)) conflicts.events.unshift(e);
+  conflicts.events.sort((a, b) => b.ts - a.ts);
+  conflicts.events.length = Math.min(conflicts.events.length, 1000);
+  paintZoneNews();
+  clearTimeout(conflicts.timer);
+  conflicts.timer = setTimeout(refreshZones, 300);   // many headlines arrive together: refresh heat once
+}
+
 // ---------------------------------------------------------------- feed status
 const PANEL_FEEDS = {
   "tag-prices": ["crypto", "stocks", "quotes"],
@@ -382,15 +424,17 @@ function showTab(name) {
 }
 
 // ---------------------------------------------------------------- live socket
-const handlers = { tick: onTick, news: onNews, whale: onWhale, status: (s) => { state.feeds[s.feed] = s; paintStatus(); } };
+const handlers = { tick: onTick, news: onNews, whale: onWhale, conflict: onConflict, status: (s) => { state.feeds[s.feed] = s; paintStatus(); } };
 function connect() {
   const ws = new WebSocket(`ws://${location.host}/ws`);
   ws.onmessage = (m) => { const ev = JSON.parse(m.data); const h = handlers[ev.kind]; if (h) h(ev); };
   ws.onclose = () => {
+    delete document.body.dataset.live;
     state.feeds.server = { state: "down", detail: "terminal process not reachable", ts: nowS() };
     paintStatus(); setTimeout(connect, 2000);
   };
   ws.onopen = async () => {
+    document.body.dataset.live = "1";
     delete state.feeds.server;
     Object.assign(state.feeds, await api("/api/status")); paintStatus();
     const prices = await api("/api/prices");
@@ -401,10 +445,13 @@ function connect() {
 async function start() {
   initChart();
   await Promise.all([loadWatchlist(), loadStrip()]);
-  (await api("/api/events?kind=news&limit=300")).forEach((n) => news.items.set(n.id, n));
+  connect();   // live first: history below is deduped by id, so nothing is missed in between
+  (await api("/api/events?kind=news&limit=300")).forEach((n) => { if (!news.items.has(n.id)) news.items.set(n.id, n); });
   repaintNews();
   (await api("/api/events?kind=whale&limit=300")).reverse().forEach(onWhale);
-  connect();
+  (await api("/api/events?kind=conflict&limit=1000")).forEach((e) => { if (!conflicts.events.some((x) => x.id === e.id)) conflicts.events.push(e); });
+  conflicts.events.sort((a, b) => b.ts - a.ts);
+  paintZoneNews(); refreshZones();
   setInterval(() => { paintStatus(); state.watchlist.forEach((w) => paintQuote(w.id, 0)); }, 5000);
   if (state.watchlist.length) loadSymbol(state.watchlist[0].id);
 }

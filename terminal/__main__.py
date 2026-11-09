@@ -11,7 +11,8 @@ from terminal.app import create_app, strip_symbols, watchlist_symbols
 from terminal.bus import Bus
 from terminal.events import FeedStatus
 from terminal.config import Config, load_config
-from terminal.feeds import crypto, finnhub, onchain, rss, sec, volume, yahoo
+from terminal.brain.conflicts import load_zones
+from terminal.feeds import crypto, finnhub, gdelt, onchain, rss, sec, volume, yahoo
 from terminal.feeds.base import run_feed
 from terminal.prices import Prices
 from terminal.settings import load_settings
@@ -56,6 +57,7 @@ def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[
         "btc-onchain": lambda: onchain.btc_stream(bus, prices, settings),
         "quotes": lambda: yahoo.poll_quotes(bus, polled),
         "rss": lambda: rss.poll(bus, rss.load_feeds()),
+        "gdelt": lambda: gdelt.poll(bus, load_zones()),
         "volume": lambda: volume.poll(bus, lambda: watchlist_symbols(store), settings),
     }
     if config.finnhub_key:

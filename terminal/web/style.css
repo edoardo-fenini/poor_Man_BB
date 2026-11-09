@@ -106,3 +106,14 @@ footer a { color: #777; }
 .t-fund { color: #8a8a8a; } .t-volume { color: #00d2c8; }
 
 [hidden] { display: none !important; }
+
+#conflicts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1px; background: var(--line); }
+#conflicts > div { background: var(--panel); }
+#zones .row { grid-template-columns: 170px 40px 70px minmax(0, 1fr); cursor: default; }
+#zones .zone { color: var(--white); font-weight: 600; cursor: pointer; }
+#zones .row.sel .zone { color: var(--text); }
+#zones .count { text-align: right; }
+#zones .hot { color: var(--down); font-weight: 700; }
+#zones .chips { margin: 0; }
+#zone-news .row { grid-template-columns: 92px 70px minmax(0, 1fr) 16px; cursor: default; }
+#zone-news .title { color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
