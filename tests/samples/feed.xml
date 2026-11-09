@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Sample</title>
+<item><title>Fed holds rates &amp; signals patience</title><link>https://example.com/a</link>
+<pubDate>Sun, 09 Nov 2025 20:00:00 GMT</pubDate>
+<description>&lt;p&gt;The &lt;b&gt;Federal Reserve&lt;/b&gt; left rates unchanged.&lt;/p&gt;</description></item>
+<item><title>No link here</title><pubDate>Sun, 09 Nov 2025 20:01:00 GMT</pubDate></item>
+<item><title>&lt;img src=x onerror=alert(1)&gt;Oil jumps</title><link>https://example.com/b</link></item>
+<item><title></title><link>https://example.com/c</link></item>
+</channel></rss>

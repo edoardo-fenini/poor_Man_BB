@@ -1,0 +1,65 @@
+# News sources. tier 1 = most market-moving, 3 = least. Add or remove freely.
+[[feed]]
+name = "CNBC"
+url = "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+tier = 1
+[[feed]]
+name = "CNBC Markets"
+url = "https://www.cnbc.com/id/20910258/device/rss/rss.html"
+tier = 1
+[[feed]]
+name = "WSJ Markets"
+url = "https://feeds.content.dowjones.io/public/rss/RSSMarketsMain"
+tier = 1
+[[feed]]
+name = "MarketWatch"
+url = "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+tier = 1
+[[feed]]
+name = "Federal Reserve"
+url = "https://www.federalreserve.gov/feeds/press_all.xml"
+tier = 1
+[[feed]]
+name = "ECB"
+url = "https://www.ecb.europa.eu/rss/press.html"
+tier = 1
+[[feed]]
+name = "Yahoo Finance"
+url = "https://finance.yahoo.com/news/rssindex"
+tier = 2
+[[feed]]
+name = "BBC Business"
+url = "https://feeds.bbci.co.uk/news/business/rss.xml"
+tier = 2
+[[feed]]
+name = "BBC World"
+url = "https://feeds.bbci.co.uk/news/world/rss.xml"
+tier = 2
+[[feed]]
+name = "Guardian Business"
+url = "https://www.theguardian.com/uk/business/rss"
+tier = 2
+[[feed]]
+name = "Al Jazeera"
+url = "https://www.aljazeera.com/xml/rss/all.xml"
+tier = 2
+[[feed]]
+name = "Investing.com"
+url = "https://www.investing.com/rss/news.rss"
+tier = 2
+[[feed]]
+name = "Nasdaq"
+url = "https://www.nasdaq.com/feed/rssoutbound?category=Markets"
+tier = 2
+[[feed]]
+name = "CoinDesk"
+url = "https://www.coindesk.com/arc/outboundfeeds/rss/"
+tier = 2
+[[feed]]
+name = "Cointelegraph"
+url = "https://cointelegraph.com/rss"
+tier = 3
+[[feed]]
+name = "The Block"
+url = "https://www.theblock.co/rss.xml"
+tier = 3

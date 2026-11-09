@@ -24,3 +24,11 @@ async def test_key_present_adds_the_stock_stream():
     out, with_key = await statuses(Config("k", "", ""))
     _, without = await statuses(Config("", "", ""))
     assert "stocks" not in out and len(with_key) == len(without) + 1
+
+
+async def test_missing_sec_contact_disables_sec_feeds():
+    out, _ = await statuses(Config("", "", ""))
+    assert out["sec-8k"].state == "disabled" and "SEC_USER_AGENT" in out["sec-8k"].detail
+    assert out["finnhub-news"].state == "disabled"
+    out, _ = await statuses(Config("k", "", "Jane Doe jane@example.com"))
+    assert "sec-8k" not in out and "finnhub-news" not in out

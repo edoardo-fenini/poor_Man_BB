@@ -1,13 +1,16 @@
 """Finnhub (free key): live US stock trades, and market news."""
+import asyncio
 import json
 import re
 from collections.abc import Callable
 
+import httpx
 import websockets
 
 from terminal.bus import Bus
-from terminal.events import Tick
+from terminal.events import NewsItem, Tick
 from terminal.feeds.base import safe
+from terminal.feeds.rss import clean, news_id
 from terminal.symbols import Symbol
 
 LIVE_LIMIT = 50  # free tier subscription cap
@@ -40,3 +43,26 @@ async def stream(bus: Bus, key: str, symbols: Callable[[], list[Symbol]]) -> Non
                 bus.publish(tick)
             if [s.finnhub for s in split_live(symbols())[0]] != wanted:
                 return  # watchlist changed: reconnect with the new symbols
+
+
+def parse_news(items: list[dict]) -> list[NewsItem]:
+    out = []
+    for d in items:
+        title, url = clean(d.get("headline")), d.get("url") or ""
+        if title and url.startswith(("http://", "https://")) and d.get("datetime"):
+            out.append(NewsItem(news_id(title), title, url, clean(d.get("source"), 40) or "Finnhub",
+                                float(d["datetime"]), clean(d.get("summary"))))
+    return out
+
+
+async def poll_news(bus: Bus, key: str, every: float = 60.0) -> None:
+    seen: set[str] = set()
+    async with httpx.AsyncClient(timeout=15) as client:
+        while True:
+            response = await client.get("https://finnhub.io/api/v1/news", params={"category": "general", "token": key})
+            response.raise_for_status()
+            for item in safe(parse_news, response.json(), "finnhub-news"):
+                if item.id not in seen:
+                    seen.add(item.id)
+                    bus.publish(item)
+            await asyncio.sleep(every)

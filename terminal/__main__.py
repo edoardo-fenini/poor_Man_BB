@@ -11,7 +11,7 @@ from terminal.app import create_app, strip_symbols, watchlist_symbols
 from terminal.bus import Bus
 from terminal.events import FeedStatus
 from terminal.config import Config, load_config
-from terminal.feeds import crypto, finnhub, yahoo
+from terminal.feeds import crypto, finnhub, rss, sec, yahoo
 from terminal.feeds.base import run_feed
 from terminal.prices import Prices
 from terminal.store import Store
@@ -46,11 +46,18 @@ def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[
     feeds = {
         "crypto": lambda: crypto.stream(bus, cryptos),
         "quotes": lambda: yahoo.poll_quotes(bus, polled),
+        "rss": lambda: rss.poll(bus, rss.load_feeds()),
     }
     if config.finnhub_key:
         feeds["stocks"] = lambda: finnhub.stream(bus, config.finnhub_key, tracked)
+        feeds["finnhub-news"] = lambda: finnhub.poll_news(bus, config.finnhub_key)
     else:
         disabled("stocks", "FINNHUB_KEY", "free key at finnhub.io; stocks use slower Yahoo polling meanwhile")
+        disabled("finnhub-news", "FINNHUB_KEY", "free key at finnhub.io")
+    if config.sec_user_agent:
+        feeds["sec-8k"] = lambda: sec.poll_8k(bus, config.sec_user_agent)
+    else:
+        disabled("sec-8k", "SEC_USER_AGENT", 'your contact, e.g. "Jane Doe jane@example.com" (SEC requires it)')
     return [announce] + [functools.partial(run_feed, name, bus, work) for name, work in feeds.items()]
 
 
