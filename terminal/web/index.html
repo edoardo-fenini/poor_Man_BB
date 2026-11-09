@@ -1,1 +1,55 @@
-<!doctype html><title>terminal</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terminal</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="banner" hidden></div>
+<header id="strip"></header>
+<div id="cmdbar">
+  <span class="prompt">&gt;</span>
+  <input id="cmd" autocomplete="off" spellcheck="false" autofocus
+         placeholder="SYMBOL Enter | +SYM add | -SYM remove | / focus">
+  <span id="cmd-msg"></span>
+  <span id="feeds"></span>
+  <button id="mute" title="Mute alerts">SOUND ON</button>
+  <button id="open-settings" title="Alert settings">SETTINGS</button>
+</div>
+<main>
+  <section id="left" class="panel">
+    <h2>WATCHLIST <span class="tag" id="tag-prices"></span></h2>
+    <div id="watchlist" class="scroll"></div>
+  </section>
+  <section id="center" class="panel">
+    <h2><span id="chart-title">—</span> <span id="chart-last"></span>
+      <span id="intervals"></span></h2>
+    <div id="chart"></div>
+    <div id="rsi"></div>
+  </section>
+  <section id="right" class="panel">
+    <h2>NEWS <span class="tag" id="tag-news"></span></h2>
+    <div id="news" class="scroll"></div>
+  </section>
+  <section id="bottom" class="panel">
+    <h2 id="tabs">
+      <button data-tab="whales" class="on">WHALES</button>
+      <button data-tab="conflicts">CONFLICTS</button>
+      <button data-tab="alerts">ALERTS</button>
+      <span class="tag" id="tag-bottom"></span>
+      <span id="whale-filters"></span>
+    </h2>
+    <div id="whales" class="scroll tab"></div>
+    <div id="conflicts" class="tab" hidden></div>
+    <div id="alerts" class="scroll tab" hidden></div>
+  </section>
+</main>
+<footer>Free data, delays vary by source. Not financial advice.
+  Charts by <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a> Lightweight Charts.</footer>
+<dialog id="settings"></dialog>
+<script src="/static/vendor/lightweight-charts.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

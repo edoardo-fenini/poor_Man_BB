@@ -2,6 +2,7 @@
 import asyncio
 import contextlib
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
@@ -98,7 +99,7 @@ def create_app(
     app.state.handle = handle
 
     @app.get("/api/candles")
-    async def candles(symbol: str, interval: str = "1d"):
+    async def candles(symbol: str, interval: str = "1d", limit: int = 0):
         resolved = resolve(symbol)
         if not resolved:
             return _error(404, "symbol not found")
@@ -111,6 +112,8 @@ def create_app(
             return _error(502, "data source unavailable")
         if not rows:
             return _error(404, "symbol not found")
+        if limit > 0:
+            rows = rows[-limit:]
         return {
             "symbol": resolved.id,
             "asset": resolved.asset,
@@ -164,7 +167,12 @@ def create_app(
 
     @app.get("/api/prices")
     def get_prices():
-        return {s.id: prices.last(s.id) for s in watchlist_symbols(store) + strip_symbols()}
+        now = time.time()
+        out = {}
+        for s in watchlist_symbols(store) + strip_symbols():
+            if (price := prices.last(s.id)) is not None:
+                out[s.id] = {"price": price, "ts": now - prices.age(s.id, now)}
+        return out
 
     @app.websocket("/ws")
     async def ws(socket: WebSocket):
