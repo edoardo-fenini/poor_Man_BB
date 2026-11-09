@@ -117,3 +117,21 @@ footer a { color: #777; }
 #zones .chips { margin: 0; }
 #zone-news .row { grid-template-columns: 92px 70px minmax(0, 1fr) 16px; cursor: default; }
 #zone-news .title { color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+#alerts .row { grid-template-columns: 92px 70px 78px minmax(0, 1fr); cursor: default; }
+#alerts .sym { color: var(--white); font-weight: 600; cursor: pointer; }
+#alerts .sev-warn { color: var(--text); font-weight: 700; } #alerts .sev-critical { color: var(--down); font-weight: 700; }
+#alerts .sev-info { color: #666; }
+#alerts .text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--white); }
+#mute.muted { background: var(--down); color: #fff; }
+dialog#settings { background: #0b0b0b; color: var(--text); border: 1px solid var(--text); padding: 14px 18px; width: 560px; max-height: 90vh; }
+dialog#settings::backdrop { background: rgba(0, 0, 0, .7); }
+#settings h3 { margin: 0 0 8px; font-size: 13px; }
+#settings label { display: grid; grid-template-columns: 1fr 120px; gap: 8px; margin: 3px 0; align-items: center; }
+#settings input { width: 100%; }
+#settings .levels { margin: 4px 0; }
+#settings .level { display: flex; gap: 8px; align-items: center; margin: 2px 0; }
+#settings .add { display: flex; gap: 6px; margin-top: 6px; }
+#settings .add input { width: 110px; }
+#settings .buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+#settings-error { color: var(--down); min-height: 1.3em; }

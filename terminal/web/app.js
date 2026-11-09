@@ -66,7 +66,10 @@ function paintQuote(id, flash) {
     px.textContent = fmtPrice(q.price);
     ch.textContent = chgText;
     ch.className = "chg " + dirClass(chg || 0);
-    if (age) age.textContent = q.ts && nowS() - q.ts > 120 ? fmtAge(nowS() - q.ts) : "";
+    if (age) {
+      const closed = row.dataset.asset === "stock" && state.feeds["us-market"] && state.feeds["us-market"].state === "closed";
+      age.textContent = closed ? "CLSD" : q.ts && nowS() - q.ts > 120 ? fmtAge(nowS() - q.ts) : "";
+    }
     if (flash) {
       row.classList.remove("flash-up", "flash-down");
       void row.offsetWidth;
@@ -97,7 +100,7 @@ async function loadPrev(id) {
 
 function quoteRow(item, cls) {
   const row = el("div", null, cls);
-  row.dataset.id = item.id;
+  row.dataset.id = item.id; row.dataset.asset = item.asset;
   row.append(el("span", item.id.replace("-USD", ""), "sym"), el("span", "—", "px"), el("span", "", "chg"));
   row.addEventListener("click", () => loadSymbol(item.id));
   return row;
@@ -393,6 +396,110 @@ function onConflict(e) {
   conflicts.timer = setTimeout(refreshZones, 300);   // many headlines arrive together: refresh heat once
 }
 
+// ---------------------------------------------------------------- alerts
+const alertState = { settings: {}, audio: null, bannerTimer: null };
+
+function beep(critical) {
+  try {
+    alertState.audio = alertState.audio || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = alertState.audio, tones = critical ? [880, 660, 880] : [660];
+    tones.forEach((freq, i) => {
+      const osc = ctx.createOscillator(), gain = ctx.createGain(), t = ctx.currentTime + i * 0.18;
+      osc.frequency.value = freq; osc.connect(gain); gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.15, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+      osc.start(t); osc.stop(t + 0.17);
+    });
+  } catch (e) { /* the browser blocks sound until the first click on the page */ }
+}
+
+function showBanner(a) {
+  const banner = $("#banner");
+  banner.replaceChildren(el("span", a.severity.toUpperCase()), el("span", a.title), el("span", a.body));
+  banner.className = a.severity; banner.hidden = false;
+  banner.onclick = () => { banner.hidden = true; if (a.symbol) loadSymbol(a.symbol); };
+  clearTimeout(alertState.bannerTimer);
+  alertState.bannerTimer = setTimeout(() => { banner.hidden = true; }, a.severity === "critical" ? 30000 : 15000);
+}
+
+function alertRow(a) {
+  const row = el("div", null, "row");
+  row.dataset.id = a.key + ":" + a.ts; row.dataset.ts = a.ts;
+  const sym = el("span", a.symbol.replace("-USD", ""), "sym");
+  if (a.symbol) sym.addEventListener("click", () => loadSymbol(a.symbol));
+  const text = el("span", a.body ? a.title + " — " + a.body : a.title, "text"); text.title = text.textContent;
+  row.append(el("span", fmtTime(a.ts), "dim"), el("span", a.severity.toUpperCase(), "sev-" + a.severity), sym, text);
+  return row;
+}
+
+function onAlert(a, live = true) {
+  insertNewestFirst($("#alerts"), alertRow(a), 500);
+  if (!live || a.severity === "info") return;
+  showBanner(a); beep(a.severity === "critical");
+}
+
+function paintMute() {
+  const muted = alertState.settings.muted === true;
+  $("#mute").textContent = muted ? "MUTED" : "SOUND ON";
+  $("#mute").classList.toggle("muted", muted);
+}
+$("#mute").addEventListener("click", async () => {
+  alertState.settings = await putJson("/api/settings", { muted: !alertState.settings.muted });
+  paintMute();
+});
+
+const SETTING_FIELDS = [
+  ["price_jump_pct", "Price jump, stocks/FX (%)"], ["price_jump_pct_crypto", "Price jump, crypto (%)"],
+  ["price_jump_window_s", "Price jump window (seconds)"], ["volume_ratio", "Unusual volume (× normal)"],
+  ["whale_trade_usd", "Whale crypto trade ($)"], ["whale_onchain_usd", "Whale on-chain transfer ($)"],
+  ["whale_insider_usd", "Insider purchase ($)"], ["news_weight", "News weight (1-5)"],
+  ["conflict_ratio", "Conflict heat (× usual)"], ["cooldown_s", "Same alert again after (seconds)"],
+  ["quiet_start", "Quiet hours start (HH:MM)"], ["quiet_end", "Quiet hours end (HH:MM)"],
+];
+
+async function openSettings() {
+  const current = alertState.settings = await api("/api/settings");
+  let levels = current.levels.map((l) => ({ ...l }));
+  const dialog = $("#settings"), form = el("div"), levelBox = el("div", null, "levels"), error = el("div");
+  error.id = "settings-error";
+  form.append(el("h3", "ALERT SETTINGS"));
+  SETTING_FIELDS.forEach(([key, label]) => {
+    const wrap = el("label", label), input = el("input");
+    input.name = key; input.value = current[key];
+    wrap.append(input); form.append(wrap);
+  });
+  const paintLevels = () => levelBox.replaceChildren(...levels.map((l, i) => {
+    const line = el("div", null, "level"), remove = el("button", "×");
+    remove.addEventListener("click", () => { levels.splice(i, 1); paintLevels(); });
+    line.append(el("span", `${l.symbol} ${l.above ? "above" : "below"} ${fmtPrice(l.price)}`), remove);
+    return line;
+  }));
+  const add = el("div", null, "add"), sym = el("input"), price = el("input"), dir = el("select"), addBtn = el("button", "ADD LEVEL");
+  sym.name = "new-level-symbol"; sym.placeholder = "SYMBOL"; price.name = "new-level-price"; price.placeholder = "PRICE";
+  dir.append(el("option", "above"), el("option", "below")); addBtn.id = "add-level";
+  addBtn.addEventListener("click", () => {
+    if (!sym.value.trim() || !(Number(price.value) > 0)) { error.textContent = "A level needs a symbol and a price."; return; }
+    levels.push({ symbol: sym.value.trim().toUpperCase(), price: Number(price.value), above: dir.value === "above" });
+    sym.value = price.value = ""; error.textContent = ""; paintLevels();
+  });
+  add.append(sym, dir, price, addBtn);
+  const buttons = el("div", null, "buttons"), cancel = el("button", "CANCEL"), save = el("button", "SAVE");
+  save.id = "save-settings";
+  cancel.addEventListener("click", () => dialog.close());
+  save.addEventListener("click", async () => {
+    const update = { levels };
+    SETTING_FIELDS.forEach(([key]) => {
+      const raw = form.querySelector(`[name="${key}"]`).value.trim();
+      update[key] = key.startsWith("quiet_") ? raw : Number(raw);
+    });
+    try { alertState.settings = await putJson("/api/settings", update); paintMute(); dialog.close(); }
+    catch (e) { error.textContent = e.message; }
+  });
+  buttons.append(cancel, save);
+  form.append(el("h3", "PRICE LEVELS"), levelBox, add, error, buttons);
+  dialog.replaceChildren(form); paintLevels(); dialog.showModal();
+}
+$("#open-settings").addEventListener("click", openSettings);
+
 // ---------------------------------------------------------------- feed status
 const PANEL_FEEDS = {
   "tag-prices": ["crypto", "stocks", "quotes"],
@@ -424,7 +531,7 @@ function showTab(name) {
 }
 
 // ---------------------------------------------------------------- live socket
-const handlers = { tick: onTick, news: onNews, whale: onWhale, conflict: onConflict, status: (s) => { state.feeds[s.feed] = s; paintStatus(); } };
+const handlers = { tick: onTick, news: onNews, whale: onWhale, conflict: onConflict, alert: onAlert, status: (s) => { state.feeds[s.feed] = s; paintStatus(); } };
 function connect() {
   const ws = new WebSocket(`ws://${location.host}/ws`);
   ws.onmessage = (m) => { const ev = JSON.parse(m.data); const h = handlers[ev.kind]; if (h) h(ev); };
@@ -452,6 +559,8 @@ async function start() {
   (await api("/api/events?kind=conflict&limit=1000")).forEach((e) => { if (!conflicts.events.some((x) => x.id === e.id)) conflicts.events.push(e); });
   conflicts.events.sort((a, b) => b.ts - a.ts);
   paintZoneNews(); refreshZones();
+  (await api("/api/events?kind=alert&limit=300")).reverse().forEach((a) => onAlert(a, false));
+  alertState.settings = await api("/api/settings"); paintMute();
   setInterval(() => { paintStatus(); state.watchlist.forEach((w) => paintQuote(w.id, 0)); }, 5000);
   if (state.watchlist.length) loadSymbol(state.watchlist[0].id);
 }

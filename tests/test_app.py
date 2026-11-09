@@ -41,9 +41,16 @@ def test_watchlist_put_rejects_garbage(ctx):
 
 
 def test_settings_roundtrip(ctx):
-    assert ctx.get("/api/settings").json() == {}
+    assert ctx.get("/api/settings").json()["price_jump_pct"] == 2.0     # defaults are included
     assert ctx.put("/api/settings", json={"muted": True}).status_code == 200
-    assert ctx.get("/api/settings").json() == {"muted": True}
+    assert ctx.get("/api/settings").json()["muted"] is True
+
+
+def test_settings_put_rejects_bad_values(ctx):
+    r = ctx.put("/api/settings", json={"price_jump_pct": -5})
+    assert r.status_code == 400 and "price_jump_pct" in r.json()["error"]
+    assert ctx.put("/api/settings", json=[1]).status_code == 400
+    assert ctx.get("/api/settings").json()["price_jump_pct"] == 2.0
 
 
 def test_ws_receives_bus_event(ctx):
@@ -101,3 +108,39 @@ def test_conflict_events_feed_zone_heat(ctx):
     zones = wait_for(lambda: [z for z in ctx.get("/api/conflicts").json() if z["count"] == 3])
     assert zones[0]["zone"] == "Taiwan Strait" and {"symbol": "TSM", "direction": -1} in zones[0]["assets"]
     assert len(ctx.get("/api/conflicts").json()) >= 8
+
+
+def alerts(ctx):
+    return ctx.get("/api/events", params={"kind": "alert"}).json()
+
+
+def test_whale_raises_alert_and_only_critical_notifies(ctx):
+    ctx.portal.call(ctx.bus.publish, WhaleEvent("w1", "crypto_trade", "BTC-USD", 2e6, "buy", "d", "", time.time()))
+    first = wait_for(lambda: alerts(ctx))
+    assert first[0]["severity"] == "warn" and first[0]["symbol"] == "BTC-USD" and ctx.notified == []
+    ctx.portal.call(ctx.bus.publish, WhaleEvent("w2", "crypto_trade", "ETH-USD", 5e7, "sell", "d", "", time.time()))
+    wait_for(lambda: len(alerts(ctx)) == 2)
+    assert len(ctx.notified) == 1 and "ETH-USD" in ctx.notified[0][0]
+
+
+def test_heavy_news_on_watchlist_raises_alert_once(ctx):
+    title = "Tesla shares plunge on recall"
+    with ctx.websocket_connect("/ws") as ws:
+        for source in ("a", "b", "c"):
+            ctx.portal.call(ctx.bus.publish, NewsItem("n9", title, "http://x", source, 5.0, ""))
+        kinds = [ws.receive_json()["kind"] for _ in range(4)]
+    assert kinds == ["news", "news", "news", "alert"]     # weight reaches 4 with the third outlet
+    assert [a["key"] for a in alerts(ctx)] == ["news:n9"]
+
+
+def test_price_jump_from_ticks_raises_alert(ctx):
+    now = time.time()
+    for i in range(11):
+        ctx.portal.call(ctx.bus.publish, Tick("AAPL", 100 + 0.3 * i, 1, now - 300 + 30 * i, "x"))
+    assert wait_for(lambda: alerts(ctx))[0]["key"] == "jump:AAPL"
+
+
+def test_muted_setting_keeps_alerts_silent(ctx):
+    ctx.put("/api/settings", json={"muted": True})
+    ctx.portal.call(ctx.bus.publish, WhaleEvent("w3", "crypto_trade", "BTC-USD", 9e7, "buy", "d", "", time.time()))
+    assert wait_for(lambda: alerts(ctx))[0]["severity"] == "info" and ctx.notified == []

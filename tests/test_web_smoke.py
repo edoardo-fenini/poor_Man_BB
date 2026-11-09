@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from terminal.events import ConflictEvent, NewsItem, Tick, WhaleEvent
+from terminal.events import Alert, ConflictEvent, NewsItem, Tick, WhaleEvent
 
 WEB = Path(__file__).parent.parent / "terminal" / "web"
 
@@ -91,3 +91,45 @@ def test_conflicts_tab_shows_zone_heat_and_headlines(page, live):
     page.click('#zones [data-zone="Taiwan Strait"] .zone')
     page.wait_for_selector("#zone-news .row")
     assert "<i>cross</i>" in page.text_content("#zone-news .row")
+
+
+def test_alert_banner_appears_for_critical_only(page, live):
+    import time
+    live.publish(Alert("k:info", "info", "Quiet <b>note</b>", "", "", time.time()))
+    live.publish(Alert("k:crit", "critical", "BTC-USD -6.0% in 5 min", "now 95,000.00", "BTC-USD", time.time() + 1))
+    page.wait_for_selector("#banner.critical")
+    assert "BTC-USD -6.0%" in page.text_content("#banner") and "Quiet" not in page.text_content("#banner")
+    page.click("#banner")
+    page.wait_for_selector("#banner", state="hidden")
+    page.wait_for_function("document.querySelector('#chart-title').textContent.includes('BTC-USD')")
+    page.click('#tabs [data-tab="alerts"]')
+    rows = page.query_selector_all("#alerts .row")
+    assert len(rows) == 2 and "Quiet <b>note</b>" in rows[1].text_content()
+
+
+def test_mute_button_and_settings_dialog_save(page, live):
+    import json
+    import urllib.request
+
+    def settings():
+        return json.load(urllib.request.urlopen(live.url + "/api/settings"))
+
+    page.click("#mute")
+    page.wait_for_function("document.querySelector('#mute').textContent.includes('MUTED')")
+    assert settings()["muted"] is True
+    page.click("#open-settings")
+    page.fill('#settings [name="price_jump_pct"]', "1.5")
+    page.fill('#settings [name="new-level-symbol"]', "aapl")
+    page.fill('#settings [name="new-level-price"]', "250")
+    page.click("#settings #add-level")
+    page.click("#settings #save-settings")
+    page.wait_for_selector("#settings", state="hidden")
+    saved = settings()
+    assert saved["price_jump_pct"] == 1.5 and saved["levels"] == [{"symbol": "AAPL", "price": 250.0, "above": True}]
+
+
+def test_settings_dialog_shows_server_error(page):
+    page.click("#open-settings")
+    page.fill('#settings [name="quiet_start"]', "99:99")
+    page.click("#settings #save-settings")
+    page.wait_for_function("document.querySelector('#settings-error').textContent.includes('quiet_start')")

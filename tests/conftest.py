@@ -17,9 +17,11 @@ async def fake_history(symbol, interval):
 def ctx():
     """A running app with no feeds and no network."""
     bus, store, prices = Bus(), Store(":memory:"), Prices()
-    app = create_app(Config("", "", ""), store, bus, prices, feeds=[], history=fake_history)
+    notified = []
+    app = create_app(Config("", "", ""), store, bus, prices, feeds=[], history=fake_history,
+                     notify=lambda title, body: notified.append((title, body)))
     with TestClient(app) as client:
-        client.bus, client.store = bus, store
+        client.bus, client.store, client.notified = bus, store, notified
         yield client
 
 
@@ -34,7 +36,8 @@ class Live:
         import uvicorn
 
         self.bus, self.store, self.prices = Bus(), Store(":memory:"), Prices()
-        self.app = create_app(Config("", "", ""), self.store, self.bus, self.prices, feeds=[], history=fake_history)
+        self.app = create_app(Config("", "", ""), self.store, self.bus, self.prices, feeds=[], history=fake_history,
+                              notify=lambda title, body: None)
         with socket.socket() as s:
             s.bind(("127.0.0.1", 0))
             port = s.getsockname()[1]

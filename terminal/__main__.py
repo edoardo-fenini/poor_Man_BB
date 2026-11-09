@@ -1,4 +1,5 @@
 """`python -m terminal` starts the terminal; `python -m terminal doctor` checks the feeds."""
+import asyncio
 import functools
 import logging
 import sys
@@ -11,6 +12,7 @@ from terminal.app import create_app, strip_symbols, watchlist_symbols
 from terminal.bus import Bus
 from terminal.events import FeedStatus
 from terminal.config import Config, load_config
+from terminal.brain.alerts import us_market_open
 from terminal.brain.conflicts import load_zones
 from terminal.feeds import crypto, finnhub, gdelt, onchain, rss, sec, volume, yahoo
 from terminal.feeds.base import run_feed
@@ -18,6 +20,14 @@ from terminal.prices import Prices
 from terminal.settings import load_settings
 from terminal.store import Store
 from terminal.symbols import Symbol
+
+
+async def market_clock(name: str, bus: Bus) -> None:
+    """Tells the page whether US stocks are trading, so a quiet tape reads as closed, not broken."""
+    while True:
+        now = time.time()
+        bus.publish(FeedStatus(name, "ok" if us_market_open(now) else "closed", "US market hours 04:00-20:00 ET", now))
+        await asyncio.sleep(60)
 
 
 def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[Callable[[], Awaitable[None]]]:
@@ -76,7 +86,8 @@ def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[
     else:
         disabled("sec-filings", "SEC_USER_AGENT", 'your contact, e.g. "Jane Doe jane@example.com" (SEC requires it)')
         disabled("sec-8k", "SEC_USER_AGENT", 'your contact, e.g. "Jane Doe jane@example.com" (SEC requires it)')
-    return [announce] + [functools.partial(run_feed, name, bus, work) for name, work in feeds.items()]
+    return [announce, functools.partial(market_clock, "us-market", bus)] + [
+        functools.partial(run_feed, name, bus, work) for name, work in feeds.items()]
 
 
 def main(argv: list[str]) -> int:

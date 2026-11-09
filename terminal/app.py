@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from terminal.brain.alerts import AlertEngine
 from terminal.brain.analysis import Analyser
 from terminal.brain.conflicts import Zones, load_zones
 from terminal.brain.news_rules import RulesAnalyser
@@ -18,7 +19,9 @@ from terminal.bus import Bus
 from terminal.config import Config
 from terminal.events import to_json
 from terminal.feeds import yahoo
+from terminal.notify import mac_notify
 from terminal.prices import Prices
+from terminal.settings import load_settings, validate
 from terminal.store import Store
 from terminal.symbols import Symbol, resolve
 
@@ -57,11 +60,29 @@ def create_app(
     feeds: list[Callable[[], Awaitable[None]]] | None = None,
     history=yahoo.history,
     analyser: Analyser | None = None,
+    notify: Callable[[str, str], None] = mac_notify,
 ) -> FastAPI:
     clients: set[asyncio.Queue] = set()
     status: dict[str, dict] = {}
     analyser = analyser or RulesAnalyser()
     zones = Zones(load_zones(), store)
+    cache: dict = {}  # settings and watchlist are read on every tick; cleared whenever either is saved
+
+    def settings() -> dict:
+        if "settings" not in cache:
+            cache["settings"] = load_settings(store)
+        return cache["settings"]
+
+    def watched() -> set[str]:
+        if "watched" not in cache:
+            cache["watched"] = {s.id for s in watchlist_symbols(store)}
+        return cache["watched"]
+
+    def asset_of(symbol: str) -> str:
+        resolved = resolve(symbol)
+        return resolved.asset if resolved else "stock"
+
+    engine = AlertEngine(settings, prices, watched, asset_of)
     # story id -> the stored story; the same headline from several outlets is one story
     stories: dict[str, dict] = {n["id"]: n for n in store.recent("news", STORED["news"])}
 
@@ -71,7 +92,7 @@ def create_app(
         if story and item.source in story["outlets"]:
             return None
         outlets = (story["outlets"] if story else []) + [item.source]
-        analysis = analyser.analyse(item, {s.id for s in watchlist_symbols(store)}, len(outlets))
+        analysis = analyser.analyse(item, watched(), len(outlets))
         payload = {**(story or to_json(item)), "outlets": outlets, "analysis": asdict(analysis)}
         stories[item.id] = payload
         if len(stories) > 2 * STORED["news"]:
@@ -88,8 +109,10 @@ def create_app(
     def handle(event) -> None:
         payload = to_json(event)
         kind = payload["kind"]
+        alerts = []
         if kind == "tick":
             prices.update(event)
+            alerts = engine.on_event(event)
         elif kind == "status":
             status[event.feed] = {"state": event.state, "detail": event.detail, "ts": event.ts}
         elif kind == "news":
@@ -97,12 +120,22 @@ def create_app(
             if payload is None:
                 return
             store.add("news", event.id, payload["ts"], payload, replace=True)
+            alerts = engine.on_news(payload)
         elif kind in STORED:
             if not store.add(kind, _event_key(payload), payload["ts"], payload):
                 return  # already seen: do not show it twice
-            if kind == "conflict":
-                zones.record(event)
+            if kind == "whale":
+                alerts = engine.on_event(event)
+            elif kind == "conflict":
+                zone = zones.record(event)
+                alerts = engine.on_zone(zone) if zone else []
         broadcast(payload)
+        for alert in alerts:
+            alert_payload = to_json(alert)
+            store.add("alert", _event_key(alert_payload), alert.ts, alert_payload)
+            broadcast(alert_payload)
+            if alert.severity == "critical":
+                notify(alert.title, alert.body)
 
     async def pump() -> None:
         pruned = 0
@@ -173,6 +206,7 @@ def create_app(
             return _error(400, "unknown symbols: " + ", ".join(bad))
         ids = list(dict.fromkeys(resolve(x).id for x in body))[:200]
         store.set("watchlist", ids)
+        cache.clear()
         return get_watchlist()
 
     @app.get("/api/strip")
@@ -181,14 +215,19 @@ def create_app(
 
     @app.get("/api/settings")
     def get_settings():
-        return store.get("settings", {})
+        return load_settings(store)
 
     @app.put("/api/settings")
     async def put_settings(request: Request):
         body = await request.json()
         if not isinstance(body, dict):
             return _error(400, "expected an object")
-        store.set("settings", {**store.get("settings", {}), **body})
+        try:
+            update = validate(body)
+        except ValueError as exc:
+            return _error(400, str(exc))
+        store.set("settings", {**store.get("settings", {}), **update})
+        cache.clear()
         return get_settings()
 
     @app.get("/api/conflicts")
