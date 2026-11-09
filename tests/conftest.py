@@ -62,7 +62,7 @@ def live():
     server.stop()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def browser():
     import os
 
