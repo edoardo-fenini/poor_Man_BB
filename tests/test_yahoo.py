@@ -39,3 +39,31 @@ def test_frame_to_ticks_skips_missing_symbols():
     df = pd.concat({"AAPL": ohlcv([1.0, 2.0, 3.0])}, axis=1)
     assert [t.symbol for t in frame_to_ticks(df, {"AAPL": "AAPL", "ZZZZ": "ZZZZ"}, now=2e9)] == ["AAPL"]
     assert frame_to_ticks(pd.DataFrame(), {"AAPL": "AAPL"}, now=0) == []
+
+
+async def test_poll_quotes_raises_when_yahoo_returns_nothing():
+    import pytest
+
+    from terminal.bus import Bus
+    from terminal.feeds.yahoo import poll_quotes
+    from terminal.symbols import resolve
+
+    with pytest.raises(ConnectionError):   # yfinance swallows network errors and hands back an empty frame
+        await poll_quotes(Bus(), lambda: [resolve("AAPL")], download=lambda symbols, period, interval: pd.DataFrame())
+
+
+async def test_poll_quotes_publishes_then_skips_unchanged():
+    import asyncio
+
+    from terminal.bus import Bus
+    from terminal.feeds.yahoo import poll_quotes
+    from terminal.symbols import resolve
+
+    bus = Bus()
+    sub = bus.subscribe()
+    frame = pd.concat({"AAPL": ohlcv([1.0, 2.0, 3.0])}, axis=1)
+    task = asyncio.create_task(poll_quotes(bus, lambda: [resolve("AAPL")], every=0.01,
+                                           download=lambda symbols, period, interval: frame))
+    await asyncio.sleep(0.1)
+    task.cancel()
+    assert sub.queue.qsize() == 1 and sub.queue.get_nowait().price == 3.0   # an old bar is published once, not every poll

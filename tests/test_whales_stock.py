@@ -107,3 +107,36 @@ def test_filing_xml_with_entity_declarations_is_refused():
     bomb = raw.replace(b'<?xml version="1.0"?>', b'<?xml version="1.0"?><!DOCTYPE d [<!ENTITY a "aaaaaaaaaa">]>')
     assert bomb != raw and len(parse_form4(raw, filings()[0])) == 2
     assert parse_form4(bomb, filings()[0]) == []
+
+
+async def test_volume_poll_raises_when_no_data_comes_back():
+    from terminal.bus import Bus
+    from terminal.feeds.volume import poll
+
+    async def no_bars(symbols, period, interval):
+        return {s.id: [] for s in symbols}
+
+    with pytest.raises(ConnectionError):
+        await poll(Bus(), lambda: [], lambda: {"volume_ratio": 3.0}, bars=no_bars)
+
+
+async def test_volume_poll_publishes_unusual_volume():
+    import asyncio
+    import time
+
+    from terminal.bus import Bus
+    from terminal.feeds.volume import poll
+
+    today = int(time.time() // DAY)
+
+    async def fake_bars(symbols, period, interval):
+        if period == "1mo":
+            return {"AAPL": [c for day in range(today - 20, today) for c in bars(day, [100] * 78, "AAPL")]}
+        return {"AAPL": bars(today, [500, 500, 500], "AAPL")}
+
+    bus = Bus()
+    sub = bus.subscribe()
+    task = asyncio.create_task(poll(bus, lambda: [], lambda: {"volume_ratio": 3.0}, every=60, bars=fake_bars))
+    whale = await asyncio.wait_for(anext(sub), 2)
+    task.cancel()
+    assert (whale.symbol, whale.type, whale.detail) == ("AAPL", "volume", "5.0× normal volume")

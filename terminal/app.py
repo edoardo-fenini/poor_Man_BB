@@ -59,6 +59,7 @@ def create_app(
     prices: Prices,
     feeds: list[Callable[[], Awaitable[None]]] | None = None,
     history=yahoo.history,
+    bars=yahoo.bars,
     analyser: Analyser | None = None,
     notify: Callable[[str, str], None] = mac_notify,
 ) -> FastAPI:
@@ -160,6 +161,8 @@ def create_app(
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
     app.state.handle = handle
+    app.state.bars = bars
+    app.state.history = history
 
     @app.get("/api/candles")
     async def candles(symbol: str, interval: str = "1d", limit: int = 0):
@@ -169,12 +172,12 @@ def create_app(
         if interval not in yahoo.INTERVALS:
             return _error(400, "bad interval")
         try:
-            rows = await history(resolved, interval)
+            rows = await app.state.history(resolved, interval)
         except Exception as exc:
             log.warning("history failed for %s: %s", resolved.id, exc)
             return _error(502, "data source unavailable")
         if not rows:
-            return _error(404, "symbol not found")
+            return _error(404, "no data")  # a well-formed symbol: unknown to Yahoo, or Yahoo did not answer
         if limit > 0:
             rows = rows[-limit:]
         return {
@@ -185,6 +188,23 @@ def create_app(
                 for c in rows
             ],
         }
+
+    @app.get("/api/closes")
+    async def closes():
+        """Previous and latest daily close for every tracked symbol, in one batched request."""
+        cached = cache.get("closes")
+        if cached and time.time() - cached[0] < 60:
+            return cached[1]
+        tracked = {s.id: s for s in watchlist_symbols(store) + strip_symbols()}
+        try:
+            daily = await app.state.bars(list(tracked.values()), "5d", "1d")
+        except Exception as exc:
+            log.warning("closes failed: %s", exc)
+            return {}
+        out = {id_: {"prev": rows[-2].close, "last": rows[-1].close, "ts": rows[-1].ts}
+               for id_, rows in daily.items() if len(rows) >= 2}
+        cache["closes"] = (time.time(), out)
+        return out
 
     @app.get("/api/events")
     def events(kind: str, limit: int = 200):
@@ -252,12 +272,25 @@ def create_app(
         await socket.accept()
         queue: asyncio.Queue = asyncio.Queue(2000)
         clients.add(queue)
+
+        async def until_closed() -> None:  # the page never sends; this returns when it goes away
+            with contextlib.suppress(WebSocketDisconnect, RuntimeError):
+                while True:
+                    await socket.receive_text()
+
+        closed = asyncio.create_task(until_closed())
         try:
             while True:
-                await socket.send_json(await queue.get())
+                item = asyncio.create_task(queue.get())
+                await asyncio.wait({item, closed}, return_when=asyncio.FIRST_COMPLETED)
+                if closed.done():
+                    item.cancel()
+                    break
+                await socket.send_json(item.result())
         except (WebSocketDisconnect, RuntimeError):
             pass
         finally:
+            closed.cancel()
             clients.discard(queue)
 
     @app.get("/")

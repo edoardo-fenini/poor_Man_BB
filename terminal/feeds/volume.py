@@ -72,20 +72,22 @@ def universe(watchlist: list[Symbol]) -> list[Symbol]:
 
 
 async def poll(bus: Bus, symbols: Callable[[], list[Symbol]], settings: Callable[[], dict],
-               every: float = 120.0) -> None:
+               every: float = 120.0, bars=yahoo.bars) -> None:
     profiles: dict[str, list[float]] = {}
     built_on = None
     while True:
         scan = universe(symbols())
         today = int(time.time() // DAY)
         if built_on != today or any(s.id not in profiles for s in scan):
-            history = await yahoo.bars(scan, "1mo", "5m")
+            history = await bars(scan, "1mo", "5m")
+            if scan and not any(history.values()):
+                raise ConnectionError("Yahoo returned no volume history")
             # the profile is the past: leave out today's partial session
             profiles = profile({k: [c for c in v if int(c.ts // DAY) < today] for k, v in history.items()})
             built_on = today
             for s in scan:
                 profiles.setdefault(s.id, [])
-        for symbol, candles in (await yahoo.bars(scan, "1d", "5m")).items():
+        for symbol, candles in (await bars(scan, "1d", "5m")).items():
             current = [c for c in candles if int(c.ts // DAY) == today]
             if whale := unusual(symbol, current, profiles.get(symbol, []), settings()["volume_ratio"]):
                 bus.publish(whale)

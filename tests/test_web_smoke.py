@@ -133,3 +133,12 @@ def test_settings_dialog_shows_server_error(page):
     page.fill('#settings [name="quiet_start"]', "99:99")
     page.click("#settings #save-settings")
     page.wait_for_function("document.querySelector('#settings-error').textContent.includes('quiet_start')")
+
+
+def test_valid_symbol_without_data_is_reported_as_no_data(page, live):
+    async def empty(symbol, interval):
+        return []
+    live.app.state.history = empty
+    page.fill("#cmd", "MSFT")
+    page.press("#cmd", "Enter")
+    page.wait_for_function("document.querySelector('#cmd-msg').textContent.startsWith('NO DATA: MSFT')")

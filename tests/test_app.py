@@ -144,3 +144,36 @@ def test_muted_setting_keeps_alerts_silent(ctx):
     ctx.put("/api/settings", json={"muted": True})
     ctx.portal.call(ctx.bus.publish, WhaleEvent("w3", "crypto_trade", "BTC-USD", 9e7, "buy", "d", "", time.time()))
     assert wait_for(lambda: alerts(ctx))[0]["severity"] == "info" and ctx.notified == []
+
+
+def test_server_stops_promptly_with_a_page_connected(live):
+    from websockets.sync.client import connect
+
+    with connect(live.url.replace("http", "ws") + "/ws"):
+        started = time.time()
+        live.stop()
+        assert time.time() - started < 2 and not live.thread.is_alive()
+
+
+def test_closes_gives_previous_and_last_close_for_tracked_symbols_in_one_call(ctx):
+    closes = ctx.get("/api/closes").json()
+    assert closes["AAPL"] == {"prev": 11.0, "last": 12.0, "ts": 1000.0 + 2 * 86400}
+    assert {"BTC-USD", "^VIX", "EURUSD"} <= set(closes)        # watchlist and strip
+    ctx.put("/api/watchlist", json=["AAPL", "NODATA"])
+    assert "NODATA" not in ctx.get("/api/closes").json()
+
+
+def test_closes_survives_a_failing_data_source(ctx):
+    async def boom(symbols, period, interval):
+        raise ConnectionError("down")
+    ctx.app.state.bars = boom
+    ctx.put("/api/watchlist", json=["AAPL"])                    # clears the cache
+    assert ctx.get("/api/closes").json() == {}
+
+
+def test_known_symbol_without_data_says_no_data_not_unknown(ctx):
+    async def empty(symbol, interval):
+        return []
+    ctx.app.state.history = empty
+    r = ctx.get("/api/candles", params={"symbol": "AAPL", "interval": "1d"})
+    assert r.status_code == 404 and r.json() == {"error": "no data"}

@@ -2,6 +2,7 @@
 import asyncio
 import functools
 import logging
+import os
 import sys
 import time
 from collections.abc import Awaitable, Callable
@@ -94,13 +95,26 @@ def main(argv: list[str]) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
     config = load_config()
     command = argv[0] if argv else "run"
+    if command == "doctor":
+        from terminal.doctor import default_checks, doctor
+        return 1 if asyncio.run(doctor(default_checks(config))) else 0
     if command != "run":
-        print(f"unknown command: {command}\nusage: python -m terminal [run]")
+        print(f"unknown command: {command}\nusage: python -m terminal [run|doctor]")
         return 2
     store, bus, prices = Store(config.db_path), Bus(), Prices()
     app = create_app(config, store, bus, prices, feeds=build_feeds(config, store, bus, prices))
-    print(f"Terminal running at http://{config.host}:{config.port}  (Ctrl+C to stop)")
-    uvicorn.run(app, host=config.host, port=config.port, log_level="warning")
+    print(f"Terminal running at http://{config.host}:{config.port}  (Ctrl+C to stop)", flush=True)
+    server = uvicorn.Server(uvicorn.Config(app, host=config.host, port=config.port, log_level="warning",
+                                           timeout_graceful_shutdown=2))
+
+    async def serve() -> None:
+        await server.serve()
+        # Data-fetching threads may still be waiting on a slow source, and asyncio would wait for them.
+        # Everything is already saved (SQLite autocommit), so leave now and keep Ctrl+C instant.
+        sys.stdout.flush()
+        os._exit(0)
+
+    asyncio.run(serve())
     return 0
 
 

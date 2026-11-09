@@ -13,12 +13,17 @@ async def fake_history(symbol, interval):
     return [Candle(symbol.id, interval, 1000.0 + i * 60, 10 + i, 12 + i, 9 + i, 11 + i, 100.0) for i in range(60)]
 
 
+async def fake_bars(symbols, period, interval):
+    return {s.id: [Candle(s.id, interval, 1000.0 + i * 86400, 10, 12, 9, 10 + i, 100.0) for i in range(3)]
+            for s in symbols if s.id != "NODATA"}
+
+
 @pytest.fixture
 def ctx():
     """A running app with no feeds and no network."""
     bus, store, prices = Bus(), Store(":memory:"), Prices()
     notified = []
-    app = create_app(Config("", "", ""), store, bus, prices, feeds=[], history=fake_history,
+    app = create_app(Config("", "", ""), store, bus, prices, feeds=[], history=fake_history, bars=fake_bars,
                      notify=lambda title, body: notified.append((title, body)))
     with TestClient(app) as client:
         client.bus, client.store, client.notified = bus, store, notified
@@ -36,7 +41,7 @@ class Live:
         import uvicorn
 
         self.bus, self.store, self.prices = Bus(), Store(":memory:"), Prices()
-        self.app = create_app(Config("", "", ""), self.store, self.bus, self.prices, feeds=[], history=fake_history,
+        self.app = create_app(Config("", "", ""), self.store, self.bus, self.prices, feeds=[], history=fake_history, bars=fake_bars,
                               notify=lambda title, body: None)
         with socket.socket() as s:
             s.bind(("127.0.0.1", 0))

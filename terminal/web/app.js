@@ -114,8 +114,9 @@ async function loadWatchlist() {
     row.append(el("span", "", "age"));
     return row;
   }));
-  state.watchlist.forEach((w) => { paintQuote(w.id, 0); if (quote(w.id).prev === null) loadPrev(w.id); });
+  state.watchlist.forEach((w) => paintQuote(w.id, 0));
   markSelected();
+  loadCloses();   // not awaited: a slow data source must not hold up the rest of the page
 }
 
 async function loadStrip() {
@@ -128,7 +129,16 @@ async function loadStrip() {
     q.addEventListener("click", () => loadSymbol(s.id));
     return q;
   }));
-  state.strip.forEach((s) => loadPrev(s.id));
+}
+
+async function loadCloses() {
+  const closes = await api("/api/closes").catch(() => ({}));
+  for (const [id, c] of Object.entries(closes)) {
+    const q = quote(id);
+    q.prev = c.prev;
+    if (q.price === null) { q.price = c.last; q.ts = c.ts; }
+    paintQuote(id, 0);
+  }
 }
 
 function markSelected() {
@@ -206,7 +216,9 @@ async function loadSymbol(text) {
   try {
     data = await api(`/api/candles?symbol=${encodeURIComponent(text)}&interval=${state.interval}`);
   } catch (e) {
-    $("#cmd-msg").textContent = e.message === "symbol not found" ? "NOT FOUND: " + text : "ERROR: " + e.message;
+    $("#cmd-msg").textContent = e.message === "symbol not found" ? "NOT FOUND: " + text
+      : e.message === "no data" ? `NO DATA: ${text.toUpperCase()} (unknown symbol, or Yahoo is not answering)`
+      : "ERROR: " + e.message;
     return false;
   }
   if (seq !== loadSeq) return true;   // a newer request won
@@ -551,7 +563,8 @@ function connect() {
 
 async function start() {
   initChart();
-  await Promise.all([loadWatchlist(), loadStrip()]);
+  await loadStrip();
+  await loadWatchlist();
   connect();   // live first: history below is deduped by id, so nothing is missed in between
   (await api("/api/events?kind=news&limit=300")).forEach((n) => { if (!news.items.has(n.id)) news.items.set(n.id, n); });
   repaintNews();

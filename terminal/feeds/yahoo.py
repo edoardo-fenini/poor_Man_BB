@@ -77,14 +77,19 @@ async def bars(symbols: list[Symbol], period: str, interval: str) -> dict[str, l
     return out
 
 
-async def poll_quotes(bus: Bus, symbols: Callable[[], list[Symbol]], every: float = 15.0) -> None:
+async def poll_quotes(bus: Bus, symbols: Callable[[], list[Symbol]], every: float = 15.0,
+                      download=_download) -> None:
     seen: dict[str, tuple[float, float]] = {}
     while True:
         wanted = symbols()
         if wanted:
-            df = await asyncio.to_thread(_download, [s.yahoo for s in wanted], "1d", "1m")
+            df = await asyncio.to_thread(download, [s.yahoo for s in wanted], "1d", "1m")
             ids = {s.yahoo: s.id for s in wanted}
-            for tick in safe(lambda d: frame_to_ticks(d, ids, time.time()), df, "yahoo"):
+            ticks = safe(lambda d: frame_to_ticks(d, ids, time.time()), df, "yahoo")
+            if not ticks:
+                # yfinance swallows network errors and returns an empty frame: say so instead of looking healthy
+                raise ConnectionError("Yahoo returned no quotes")
+            for tick in ticks:
                 # a closed market repeats its last bar: publish only when something changed
                 if seen.get(tick.symbol) != (tick.ts, tick.price):
                     seen[tick.symbol] = (tick.ts, tick.price)
