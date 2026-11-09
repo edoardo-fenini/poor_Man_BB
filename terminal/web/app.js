@@ -235,7 +235,9 @@ async function loadSymbol(text) {
 function chartTick(t) {
   const c = state.candles; if (!c.length) return;
   const step = INTERVALS[state.interval], last = c[c.length - 1];
-  const time = step < 86400 ? Math.floor(t.ts / step) * step + TZ : last.time;
+  // intraday bars follow the clock; a daily chart starts a new bar when the day changes
+  const day = Math.floor(t.ts / 86400) * 86400;
+  const time = step < 86400 ? Math.floor(t.ts / step) * step + TZ : state.interval === "1d" && day > last.time ? day : last.time;
   let bar;
   if (time > last.time) { bar = { time, open: t.price, high: t.price, low: t.price, close: t.price, volume: 0 }; c.push(bar); }
   else if (time === last.time || step >= 86400) { bar = last; bar.close = t.price; bar.high = Math.max(bar.high, t.price); bar.low = Math.min(bar.low, t.price); }
@@ -525,7 +527,8 @@ function paintStatus() {
     return chip;
   }));
   for (const [tagId, feeds] of Object.entries(PANEL_FEEDS)) {
-    const known = feeds.filter((f) => state.feeds[f]).map((f) => ({ name: f, ...state.feeds[f] }));
+    // without the terminal process nothing on screen is live, whatever the feeds last said
+    const known = ["server", ...feeds].filter((f) => state.feeds[f]).map((f) => ({ name: f, ...state.feeds[f] }));
     const tag = $("#" + tagId), down = known.filter((f) => f.state === "down");
     if (down.length) { tag.textContent = `STALE ${down.map((f) => f.name).join(",")} ${fmtAge(nowS() - Math.min(...down.map((f) => f.ts)))}`; tag.className = "tag stale"; }
     else if (known.some((f) => f.state === "ok")) { tag.textContent = "LIVE"; tag.className = "tag live"; }
@@ -543,13 +546,19 @@ function showTab(name) {
 }
 
 // ---------------------------------------------------------------- live socket
-const handlers = { tick: onTick, news: onNews, whale: onWhale, conflict: onConflict, alert: onAlert, status: (s) => { state.feeds[s.feed] = s; paintStatus(); } };
+function onStatus(s) {
+  const old = state.feeds[s.feed];
+  // while a feed stays down keep the time it first went down: that is the age of the data on screen
+  state.feeds[s.feed] = old && old.state === "down" && s.state === "down" ? { ...s, ts: old.ts } : s;
+  paintStatus();
+}
+const handlers = { tick: onTick, news: onNews, whale: onWhale, conflict: onConflict, alert: onAlert, status: onStatus };
 function connect() {
   const ws = new WebSocket(`ws://${location.host}/ws`);
   ws.onmessage = (m) => { const ev = JSON.parse(m.data); const h = handlers[ev.kind]; if (h) h(ev); };
   ws.onclose = () => {
     delete document.body.dataset.live;
-    state.feeds.server = { state: "down", detail: "terminal process not reachable", ts: nowS() };
+    if (!state.feeds.server) state.feeds.server = { state: "down", detail: "terminal process not reachable", ts: nowS() };
     paintStatus(); setTimeout(connect, 2000);
   };
   ws.onopen = async () => {
@@ -575,6 +584,7 @@ async function start() {
   (await api("/api/events?kind=alert&limit=300")).reverse().forEach((a) => onAlert(a, false));
   alertState.settings = await api("/api/settings"); paintMute();
   setInterval(() => { paintStatus(); state.watchlist.forEach((w) => paintQuote(w.id, 0)); }, 5000);
+  setInterval(loadCloses, 5 * 60 * 1000);   // a tab left open overnight must not keep yesterday's reference close
   if (state.watchlist.length) loadSymbol(state.watchlist[0].id);
 }
 start();

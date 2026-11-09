@@ -84,7 +84,7 @@ The browser plays alert sounds only after you have clicked once on the page.
 | Bitcoin transfers | blockchain.info stream | live |
 | Ethereum transfers | Etherscan | about 15 s |
 | Insider and fund filings | SEC EDGAR | minutes after filing |
-| Unusual volume | Yahoo | about 2 minutes |
+| Unusual volume | Yahoo | about 10 minutes |
 | Conflicts | GDELT | about 15 minutes |
 
 Every panel says `LIVE`, `STALE <feed> <age>`, `CLOSED` or `OFF`. A price older than two minutes shows its age.
@@ -109,6 +109,8 @@ Plain files in `terminal/data/`; restart after editing.
 - 13F filings show holdings up to 45 days after quarter end, and only the ten largest positions. Changes against the previous quarter are not computed.
 - Real block trades and options flow are paid data. Unusual volume is the free stand-in.
 - Exchange holidays are treated as normal trading days.
+- The terminal answers only on `127.0.0.1` / `localhost` and refuses requests from other websites. It has no login: do not expose the port to a network.
+- Crypto whales off your watchlist (stablecoins, for instance) are logged without sound unless they are ten times the threshold.
 - The news source URLs and some APIs could not be tested where this was built. Run `doctor`; a dead feed only switches itself off.
 
 ## Develop

@@ -142,3 +142,33 @@ def test_valid_symbol_without_data_is_reported_as_no_data(page, live):
     page.fill("#cmd", "MSFT")
     page.press("#cmd", "Enter")
     page.wait_for_function("document.querySelector('#cmd-msg').textContent.startsWith('NO DATA: MSFT')")
+
+
+def test_daily_chart_starts_a_new_bar_on_a_new_day(page, live):
+    page.wait_for_function("state.candles.length > 0 && state.symbol")
+    before = page.evaluate("[state.candles.length, state.candles[state.candles.length - 1].time, state.symbol]")
+    live.publish(Tick(before[2], 55.5, 1, before[1] + 10 * 86400 + 3600, "x"))   # later than any seeded quote
+    page.wait_for_function(f"state.candles.length === {before[0] + 1}")
+    assert page.evaluate("state.candles[state.candles.length - 1].close") == 55.5
+    assert page.evaluate(f"state.candles[{before[0] - 1}].close") != 55.5      # yesterday's bar is untouched
+
+
+def test_first_down_time_is_kept_while_a_feed_stays_down(page, live):
+    from terminal.events import FeedStatus
+    live.publish(FeedStatus("rss", "down", "boom", 1000.0))
+    live.publish(FeedStatus("rss", "down", "boom", 2000.0))
+    page.wait_for_function("state.feeds.rss && state.feeds.rss.state === 'down'")
+    page.wait_for_timeout(200)
+    assert page.evaluate("state.feeds.rss.ts") == 1000.0
+    live.publish(FeedStatus("rss", "ok", "", 3000.0))
+    live.publish(FeedStatus("rss", "down", "boom", 4000.0))
+    page.wait_for_function("state.feeds.rss.ts === 4000")
+
+
+def test_panels_go_stale_when_the_server_disappears(page, live):
+    from terminal.events import FeedStatus
+    live.publish(FeedStatus("crypto", "ok", "", 1.0))
+    page.wait_for_function("document.querySelector('#tag-prices').textContent === 'LIVE'")
+    live.stop()
+    for tag in ("#tag-prices", "#tag-news", "#tag-bottom"):
+        page.wait_for_function(f"document.querySelector('{tag}').textContent.startsWith('STALE')")

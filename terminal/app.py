@@ -160,6 +160,16 @@ def create_app(
         await asyncio.gather(*tasks, return_exceptions=True)
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
+    # Only a page served by this terminal may talk to it: blocks other websites (DNS rebinding,
+    # cross-site WebSocket) from reading the stream or changing settings.
+    hosts = {f"127.0.0.1:{config.port}", f"localhost:{config.port}"}
+    origins = {f"http://{host}" for host in hosts}
+
+    @app.middleware("http")
+    async def local_only(request: Request, call_next):
+        if request.headers.get("host") not in hosts:
+            return _error(403, "this terminal only answers on its own local address")
+        return await call_next(request)
     app.state.handle = handle
     app.state.bars = bars
     app.state.history = history
@@ -269,6 +279,10 @@ def create_app(
 
     @app.websocket("/ws")
     async def ws(socket: WebSocket):
+        origin = socket.headers.get("origin")
+        if socket.headers.get("host") not in hosts or (origin is not None and origin not in origins):
+            await socket.close(code=1008)
+            return
         await socket.accept()
         queue: asyncio.Queue = asyncio.Queue(2000)
         clients.add(queue)

@@ -158,21 +158,41 @@ def parse_13f(text: bytes, filing: dict, top: int = 10) -> WhaleEvent | None:
                       detail=f"{clean(filing['company'], 60)} 13F: {positions}", url=filing["url"], ts=filing["ts"])
 
 
+def is_form(filed: str, wanted: str) -> bool:
+    """EDGAR's type filter is a prefix match ("4" also returns 424B2, 425...). Accept the form and its amendments."""
+    return filed in (wanted, wanted + "/A")
+
+
+async def fetch_filing(client: httpx.AsyncClient, filing: dict, max_bytes: int = MAX_FILING_BYTES) -> bytes | None:
+    """The filing's full text, or None if it could not be read. One bad filing must not stop the feed."""
+    try:
+        response = await client.get(filing_text_url(filing))
+    except httpx.HTTPError:
+        return None
+    if response.status_code != 200 or len(response.content) > max_bytes:
+        return None
+    return response.content
+
+
+_SEEN_FILINGS: set[str] = set()  # outlives a feed restart, so a restart never replays or skips filings
+
+
 async def poll_filings(bus: Bus, user_agent: str, every: float = 60.0) -> None:
-    seen: set[str] = set()
-    first_pass = True
     async with httpx.AsyncClient(timeout=30, headers=sec_headers(user_agent)) as client:
         while True:
             for form, parse in (("4", parse_form4), ("13F-HR", parse_13f)):
-                new = [f for f in safe(lambda b: parse_current(b, time.time()), await fetch_current(client, form, 100),
-                                       "sec-filings") if f["accession"] not in seen and f["form"].startswith(form)]
-                # on start-up read only the latest few, so a restart does not replay a hundred filings
-                for filing in new[:10] if first_pass else new:
-                    response = await client.get(filing_text_url(filing))
+                listed = safe(lambda b: parse_current(b, time.time()), await fetch_current(client, form, 100), "sec-filings")
+                new = [f for f in listed if f["accession"] not in _SEEN_FILINGS and is_form(f["form"], form)]
+                # on first start read only the latest few, so start-up does not replay a hundred filings
+                for filing in new if _SEEN_FILINGS else new[:10]:
+                    text = await fetch_filing(client, filing)
                     await asyncio.sleep(0.25)  # SEC fair-access limit is 10 requests per second
-                    if response.status_code == 200 and len(response.content) <= MAX_FILING_BYTES:
-                        for whale in safe(lambda body: parse(body, filing), response.content, "sec-filings"):
+                    if text is not None:
+                        # big 13F tables take a while to parse: keep that off the event loop
+                        for whale in await asyncio.to_thread(safe, lambda body: parse(body, filing), text, "sec-filings"):
                             bus.publish(whale)
-                seen.update(f["accession"] for f in new)
-            first_pass = False
+                _SEEN_FILINGS.update(f["accession"] for f in new)
+                if len(_SEEN_FILINGS) > 20000:
+                    _SEEN_FILINGS.clear()
+                    _SEEN_FILINGS.update(f["accession"] for f in listed)
             await asyncio.sleep(every)

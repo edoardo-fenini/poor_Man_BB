@@ -1,5 +1,7 @@
 import time
 
+import pytest
+
 from terminal.events import ConflictEvent, FeedStatus, NewsItem, Tick, WhaleEvent
 
 
@@ -127,7 +129,7 @@ def test_heavy_news_on_watchlist_raises_alert_once(ctx):
     title = "Tesla shares plunge on recall"
     with ctx.websocket_connect("/ws") as ws:
         for source in ("a", "b", "c"):
-            ctx.portal.call(ctx.bus.publish, NewsItem("n9", title, "http://x", source, 5.0, ""))
+            ctx.portal.call(ctx.bus.publish, NewsItem("n9", title, "http://x", source, time.time(), ""))
         kinds = [ws.receive_json()["kind"] for _ in range(4)]
     assert kinds == ["news", "news", "news", "alert"]     # weight reaches 4 with the third outlet
     assert [a["key"] for a in alerts(ctx)] == ["news:n9"]
@@ -177,3 +179,19 @@ def test_known_symbol_without_data_says_no_data_not_unknown(ctx):
     ctx.app.state.history = empty
     r = ctx.get("/api/candles", params={"symbol": "AAPL", "interval": "1d"})
     assert r.status_code == 404 and r.json() == {"error": "no data"}
+
+
+# M1 — only pages served by the terminal itself may talk to it
+def test_foreign_host_header_is_refused(ctx):
+    assert ctx.get("/api/watchlist", headers={"Host": "evil.example"}).status_code == 403
+    assert ctx.put("/api/watchlist", json=["AAPL"], headers={"Host": "attacker.test:8787"}).status_code == 403
+    assert ctx.get("/api/watchlist", headers={"Host": "localhost:8787"}).status_code == 200
+
+
+def test_websocket_from_another_origin_is_refused(ctx):
+    from starlette.websockets import WebSocketDisconnect
+    with pytest.raises(WebSocketDisconnect):
+        with ctx.websocket_connect("/ws", headers={"Origin": "https://evil.example"}):
+            pass
+    with ctx.websocket_connect("/ws", headers={"Origin": "http://127.0.0.1:8787"}):
+        pass

@@ -25,8 +25,10 @@ def ctx():
     notified = []
     app = create_app(Config("", "", ""), store, bus, prices, feeds=[], history=fake_history, bars=fake_bars,
                      notify=lambda title, body: notified.append((title, body)))
-    with TestClient(app) as client:
+    with TestClient(app, base_url="http://127.0.0.1:8787") as client:
         client.bus, client.store, client.notified = bus, store, notified
+        connect = client.websocket_connect  # TestClient ignores base_url for WebSockets: give the real host
+        client.websocket_connect = lambda path, **kw: connect("ws://127.0.0.1:8787" + path, **kw)
         yield client
 
 
@@ -41,11 +43,11 @@ class Live:
         import uvicorn
 
         self.bus, self.store, self.prices = Bus(), Store(":memory:"), Prices()
-        self.app = create_app(Config("", "", ""), self.store, self.bus, self.prices, feeds=[], history=fake_history, bars=fake_bars,
-                              notify=lambda title, body: None)
         with socket.socket() as s:
             s.bind(("127.0.0.1", 0))
             port = s.getsockname()[1]
+        self.app = create_app(Config("", "", "", port=port), self.store, self.bus, self.prices, feeds=[], history=fake_history, bars=fake_bars,
+                              notify=lambda title, body: None)
         self.url = f"http://127.0.0.1:{port}"
         self.server = uvicorn.Server(uvicorn.Config(self.app, host="127.0.0.1", port=port, log_level="error"))
         self.loop = asyncio.new_event_loop()

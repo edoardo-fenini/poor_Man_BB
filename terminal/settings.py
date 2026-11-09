@@ -2,6 +2,7 @@
 import math
 import re
 
+from terminal.prices import KEEP
 from terminal.store import Store
 from terminal.symbols import resolve
 
@@ -60,6 +61,8 @@ def validate(update: dict) -> dict:
                 out[key] = value
             else:
                 out[key] = _number(value)
+                if key == "price_jump_window_s" and not 30 <= value <= KEEP:
+                    raise ValueError(f"must be between 30 and {KEEP:.0f} seconds")
         except (KeyError, TypeError) as exc:
             raise ValueError(f"{key}: malformed") from exc
         except ValueError as exc:

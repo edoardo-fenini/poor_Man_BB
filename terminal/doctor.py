@@ -8,6 +8,7 @@ import websockets
 
 from terminal.brain.conflicts import load_zones
 from terminal.config import Config
+from terminal.feeds.base import scrub
 from terminal.feeds import crypto, finnhub, gdelt, onchain, rss, sec, yahoo
 from terminal.symbols import resolve
 
@@ -62,8 +63,8 @@ def default_checks(config: Config) -> list[Check]:
     async def finnhub_news() -> str:
         need(config.finnhub_key, "FINNHUB_KEY", "free key at finnhub.io")
         async with httpx.AsyncClient(timeout=8) as client:
-            response = await client.get("https://finnhub.io/api/v1/news",
-                                        params={"category": "general", "token": config.finnhub_key})
+            params, headers = finnhub.news_request(config.finnhub_key)
+            response = await client.get("https://finnhub.io/api/v1/news", params=params, headers=headers)
             response.raise_for_status()
             return f"{len(finnhub.parse_news(response.json()))} stories"
 
@@ -122,7 +123,7 @@ async def doctor(checks: list[Check], timeout: float = 12.0) -> int:
         except TimeoutError:
             return "FAIL", f"timed out after {timeout:g} s"
         except Exception as exc:
-            return "FAIL", f"{type(exc).__name__}: {exc}"[:160]
+            return "FAIL", scrub(f"{type(exc).__name__}: {exc}")[:160]
 
     results = await asyncio.gather(*(run(check) for _, check in checks))
     width = max((len(name) for name, _ in checks), default=0)

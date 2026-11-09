@@ -72,7 +72,7 @@ def universe(watchlist: list[Symbol]) -> list[Symbol]:
 
 
 async def poll(bus: Bus, symbols: Callable[[], list[Symbol]], settings: Callable[[], dict],
-               every: float = 120.0, bars=yahoo.bars) -> None:
+               every: float = 600.0, bars=yahoo.bars) -> None:
     profiles: dict[str, list[float]] = {}
     built_on = None
     while True:

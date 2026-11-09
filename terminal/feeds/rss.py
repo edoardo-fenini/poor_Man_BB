@@ -18,7 +18,8 @@ from terminal.feeds.base import safe
 FEEDS_FILE = Path(__file__).parent.parent / "data" / "rss_feeds.toml"
 USER_AGENT = "Mozilla/5.0 (compatible; terminal-rss/0.1)"
 _BLOCKS = re.compile(r"<(script|style)\b.*?</\1\s*>", re.S | re.I)
-_TAGS = re.compile(r"<[^>]*>")
+_TAGS = re.compile(r"<[^<>]*>")
+MAX_RAW = 20_000
 
 
 def load_feeds() -> list[dict]:
@@ -27,7 +28,8 @@ def load_feeds() -> list[dict]:
 
 def clean(text, limit: int = 300) -> str:
     """Plain text: no tags, no script bodies, entities decoded, whitespace collapsed, bounded length."""
-    text = _TAGS.sub(" ", _BLOCKS.sub(" ", text or ""))
+    text = (text or "")[:MAX_RAW]  # bound first: the patterns below are slow on huge hostile input
+    text = _TAGS.sub(" ", _BLOCKS.sub(" ", text))
     text = _TAGS.sub(" ", html.unescape(text))  # entities can hide a second layer of markup
     text = " ".join(text.split())
     return text if len(text) <= limit else text[: limit - 1] + "…"

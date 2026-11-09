@@ -10,6 +10,7 @@ from terminal.prices import Prices
 NEW_YORK = ZoneInfo("America/New_York")
 MIN_ZONE_HEADLINES = 5  # a ratio on two headlines is noise
 DAY = 86400
+MAX_NEWS_AGE = 3600
 
 
 def us_market_open(ts: float) -> bool:
@@ -108,7 +109,9 @@ class AlertEngine:
         kind, title = whale.type, f"{whale.symbol or 'Fund'} {_usd(whale.usd)}"
         if kind in ("crypto_trade", "onchain"):
             floor = self._num("whale_trade_usd" if kind == "crypto_trade" else "whale_onchain_usd", 1e6)
-            severity = "critical" if whale.usd >= 10 * floor else "warn"
+            # off the watchlist a whale is logged quietly, unless it is ten times the threshold
+            severity = ("critical" if whale.usd >= 10 * floor else
+                        "warn" if whale.symbol in self.watchlist() else "info")
             label = f"{whale.side} trade" if kind == "crypto_trade" else "on-chain transfer"
             # one alert per symbol per cooldown: a busy tape must not ring all day
             return self._alert(f"whale:{kind}:{whale.symbol}", severity, f"Whale {label}: {title}", whale.detail, whale.symbol)
@@ -129,6 +132,8 @@ class AlertEngine:
         hit = next((i["symbol"] for i in analysis["impacts"] if i["symbol"] in watched), None)
         if hit is None or analysis["weight"] < self._num("news_weight", 4):
             return []
+        if self.now() - story["ts"] > MAX_NEWS_AGE:
+            return []  # start-up replays hours of feed history; old news is not an alert
         severity = "critical" if analysis["weight"] >= 5 else "warn"
         return self._alert(f"news:{story['id']}", severity, f"News on {hit}: {story['title']}", "", hit)
 

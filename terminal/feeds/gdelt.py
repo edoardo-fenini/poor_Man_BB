@@ -43,21 +43,29 @@ def parse_artlist(payload: dict, zone: str) -> list[ConflictEvent]:
     return out
 
 
-async def poll(bus: Bus, zones: list[dict], every: float = 900.0) -> None:
-    async with httpx.AsyncClient(timeout=30) as client:
+async def poll(bus: Bus, zones: list[dict], every: float = 900.0, client: httpx.AsyncClient | None = None,
+               pause: float = 6.0) -> None:
+    own = client is None
+    client = client or httpx.AsyncClient(timeout=30)
+    try:
         while True:
-            failures = 0
+            failures = []
             for zone in zones:
                 try:
                     response = await client.get(API, params={
                         "query": query_for(zone), "mode": "artlist", "format": "json",
                         "maxrecords": 50, "timespan": "1h", "sort": "datedesc"})
                     response.raise_for_status()
-                    for event in safe(lambda r: parse_artlist(r.json(), zone["name"]), response, "gdelt"):
+                    payload = response.json()  # GDELT reports query errors and rate limits as HTTP 200 plain text
+                except (httpx.HTTPError, ValueError) as exc:
+                    failures.append(f"{zone['name']}: {type(exc).__name__}")
+                else:
+                    for event in safe(lambda p: parse_artlist(p, zone["name"]), payload, "gdelt"):
                         bus.publish(event)
-                except httpx.HTTPError:
-                    failures += 1
-                await asyncio.sleep(6)  # GDELT asks for at most one request every five seconds
-            if zones and failures == len(zones):
-                raise ConnectionError("GDELT unreachable for every zone")
+                await asyncio.sleep(pause)  # GDELT asks for at most one request every five seconds
+            if zones and len(failures) == len(zones):
+                raise ConnectionError(f"GDELT gave no usable answer for any zone ({failures[0]})")
             await asyncio.sleep(every)
+    finally:
+        if own:
+            await client.aclose()

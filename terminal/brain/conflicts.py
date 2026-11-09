@@ -9,6 +9,7 @@ from terminal.store import Store
 ZONES_FILE = Path(__file__).parent.parent / "data" / "zones.toml"
 DAY = 86400
 KEEP_DAYS = 30
+MIN_HISTORY_DAYS = 3
 
 
 def load_zones() -> list[dict]:
@@ -16,10 +17,13 @@ def load_zones() -> list[dict]:
 
 
 def heat(day_counts: dict[str, int], today: int) -> tuple[int, float]:
-    """(today's count, today / mean of the previous 7 days). Ratio is 0.0 with no history."""
+    """(today's count, today / mean of the previous week's days that have data).
+    Ratio is 0.0 until three such days exist: a new install or a week off is not a calm week."""
     count = day_counts.get(str(today), 0)
-    usual = sum(day_counts.get(str(today - d), 0) for d in range(1, 8)) / 7
-    return count, round(count / usual, 2) if usual else 0.0
+    past = [day_counts[str(today - d)] for d in range(1, 8) if day_counts.get(str(today - d))]
+    if len(past) < MIN_HISTORY_DAYS:
+        return count, 0.0
+    return count, round(count / (sum(past) / len(past)), 2)
 
 
 class Zones:

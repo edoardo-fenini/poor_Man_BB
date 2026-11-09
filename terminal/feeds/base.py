@@ -1,6 +1,7 @@
 """Shared feed plumbing: keep a feed alive with backoff, and parse without crashing."""
 import asyncio
 import logging
+import re
 import time
 from collections import Counter
 from collections.abc import Awaitable, Callable
@@ -9,6 +10,12 @@ from terminal.bus import Bus
 from terminal.events import FeedStatus
 
 log = logging.getLogger("terminal.feeds")
+_SECRET = re.compile(r"(?i)\b(token|apikey|api_key|key)=[^&\s'\"]+")
+
+
+def scrub(text: str) -> str:
+    """Error text often quotes the request URL; never let an API key ride along into the UI or logs."""
+    return _SECRET.sub(r"\1=***", text)
 SKIPPED: Counter[str] = Counter()
 
 
@@ -25,8 +32,9 @@ async def run_feed(
     failures = 0
     while True:
         started = time.monotonic()
-        task = asyncio.ensure_future(work())
+        task = None
         try:
+            task = asyncio.ensure_future(work())  # inside the try: work() itself may raise, e.g. on a bad data file
             done, _ = await asyncio.wait({task}, timeout=grace)
             if not done:
                 bus.publish(FeedStatus(name, "ok", "", time.time()))
@@ -34,10 +42,11 @@ async def run_feed(
             await sleep(base_delay)  # clean return (e.g. to resubscribe): restart, not an outage
             continue
         except asyncio.CancelledError:
-            task.cancel()
+            if task:
+                task.cancel()
             raise
         except Exception as exc:  # any feed failure is retried
-            detail = f"{type(exc).__name__}: {exc}"[:200]
+            detail = scrub(f"{type(exc).__name__}: {exc}")[:200]
             log.warning("feed %s down: %s", name, detail)
         bus.publish(FeedStatus(name, "down", detail, time.time()))
         if time.monotonic() - started > max_delay:

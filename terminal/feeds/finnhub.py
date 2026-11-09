@@ -2,6 +2,7 @@
 import asyncio
 import json
 import re
+import time
 from collections.abc import Callable
 
 import httpx
@@ -10,6 +11,7 @@ import websockets
 from terminal.bus import Bus
 from terminal.events import NewsItem, Tick
 from terminal.feeds.base import safe
+from terminal.feeds.crypto import Throttle
 from terminal.feeds.rss import clean, news_id
 from terminal.symbols import Symbol
 
@@ -33,14 +35,26 @@ def split_live(symbols: list[Symbol]) -> tuple[list[Symbol], list[Symbol]]:
     return live, polled
 
 
+def publish_ticks(bus: Bus, ticks: list[Tick], throttle: Throttle, now: float) -> None:
+    """At most one tick per symbol per throttle interval: a busy stock prints hundreds of trades a second."""
+    for tick in ticks:
+        if throttle.allow(tick.symbol, now):
+            bus.publish(tick)
+
+
+def news_request(key: str) -> tuple[dict, dict]:
+    """(query params, headers). The key travels as a header so it never shows up in an error message."""
+    return {"category": "general"}, {"X-Finnhub-Token": key}
+
+
 async def stream(bus: Bus, key: str, symbols: Callable[[], list[Symbol]]) -> None:
+    throttle = Throttle(0.25)
     wanted = [s.finnhub for s in split_live(symbols())[0]]
     async with websockets.connect(f"wss://ws.finnhub.io?token={key}", open_timeout=10, ping_interval=20) as ws:
         for symbol in wanted:
             await ws.send(json.dumps({"type": "subscribe", "symbol": symbol}))
         async for raw in ws:
-            for tick in safe(lambda r: parse_trades(json.loads(r)), raw, "stocks"):
-                bus.publish(tick)
+            publish_ticks(bus, safe(lambda r: parse_trades(json.loads(r)), raw, "stocks"), throttle, time.monotonic())
             if [s.finnhub for s in split_live(symbols())[0]] != wanted:
                 return  # watchlist changed: reconnect with the new symbols
 
@@ -59,7 +73,8 @@ async def poll_news(bus: Bus, key: str, every: float = 60.0) -> None:
     seen: set[str] = set()
     async with httpx.AsyncClient(timeout=15) as client:
         while True:
-            response = await client.get("https://finnhub.io/api/v1/news", params={"category": "general", "token": key})
+            params, headers = news_request(key)
+            response = await client.get("https://finnhub.io/api/v1/news", params=params, headers=headers)
             response.raise_for_status()
             for item in safe(parse_news, response.json(), "finnhub-news"):
                 if item.id not in seen:
