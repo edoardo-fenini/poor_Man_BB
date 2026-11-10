@@ -5,7 +5,7 @@ process, one browser tab.
 
 - **Charts** for stocks, ETFs, currencies, crypto, indices and futures, 1 minute to monthly, with SMA 20/50 and RSI 14.
 - **Live prices**: crypto streams in real time with no key; US stocks stream in real time with a free Finnhub key.
-- **News** from 16 outlets, tagged with the assets each story affects, the mood, a 1–5 weight, and the reasons.
+- **News** from 15 outlets, tagged with the assets each story affects, the mood, a 1–5 weight, and the reasons.
 - **Whales**: large crypto trades, large Bitcoin/Ethereum/stablecoin transfers, SEC insider trades and 13F fund filings, unusual stock volume.
 - **Conflicts**: headline heat per zone against the last week, with the assets each zone moves.
 - **Alerts**: price jumps, price levels, whales, heavy news on your watchlist, heating conflicts. Banner and sound in the page, macOS notification for critical ones.

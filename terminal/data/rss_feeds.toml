@@ -24,10 +24,6 @@ name = "ECB"
 url = "https://www.ecb.europa.eu/rss/press.html"
 tier = 1
 [[feed]]
-name = "Yahoo Finance"
-url = "https://finance.yahoo.com/news/rssindex"
-tier = 2
-[[feed]]
 name = "BBC Business"
 url = "https://feeds.bbci.co.uk/news/business/rss.xml"
 tier = 2
