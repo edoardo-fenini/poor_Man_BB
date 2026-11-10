@@ -3,7 +3,9 @@ import time
 import tomllib
 from pathlib import Path
 
+from terminal.brain.news_rules import _phrase
 from terminal.events import ConflictEvent
+from terminal.feeds.gdelt import classify
 from terminal.store import Store
 
 ZONES_FILE = Path(__file__).parent.parent / "data" / "zones.toml"
@@ -30,6 +32,13 @@ class Zones:
     def __init__(self, zones: list[dict], store: Store):
         self.zones = {z["name"]: z for z in zones}
         self.store = store
+        self._places = {z["name"]: [_phrase(k) for k in z.get("keywords", [])] for z in zones}
+
+    def match(self, title: str) -> list[str]:
+        """Zones a news headline is about: it must name the place and use a conflict word."""
+        if classify(title) == "other":
+            return []
+        return [name for name, places in self._places.items() if any(p.search(title) for p in places)]
 
     def _state(self, name: str, counts: dict, today: int) -> dict:
         count, ratio = heat(counts.get(name, {}), today)

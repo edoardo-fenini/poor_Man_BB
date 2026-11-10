@@ -85,7 +85,7 @@ The browser plays alert sounds only after you have clicked once on the page.
 | Ethereum transfers | Etherscan | about 15 s |
 | Insider and fund filings | SEC EDGAR | minutes after filing |
 | Unusual volume | Yahoo | about 10 minutes |
-| Conflicts | GDELT | about 15 minutes |
+| Conflicts | Your news feeds (place + conflict word in the headline), plus GDELT when reachable | 45 s to 15 minutes |
 
 Every panel says `LIVE`, `STALE <feed> <age>`, `CLOSED` or `OFF`. A price older than two minutes shows its age.
 
@@ -98,7 +98,7 @@ Plain files in `terminal/data/`; restart after editing.
 | `entities.csv` | Companies and assets the news rules recognise. `ambiguous=1` means the name needs a context word. |
 | `themes.toml` | Keyword groups and the assets they move, with direction. |
 | `words_positive.txt`, `words_negative.txt` | Mood words and phrases. |
-| `zones.toml` | Conflict zones, their search terms and affected assets. |
+| `zones.toml` | Conflict zones, the keywords that find them in headlines, GDELT search terms, affected assets. |
 | `rss_feeds.toml` | News sources and their tier. |
 | `addresses.csv` | Labels for on-chain addresses (e.g. exchanges). Ships empty: add only ones you trust. |
 

@@ -79,3 +79,25 @@ def test_shipped_zones_are_valid():
         for a in z["assets"]:
             assert resolve(a["symbol"]).id == a["symbol"] and a["direction"] in (-1, 0, 1)
     assert tomllib.loads(ZONES_FILE.read_text())["zone"] == zones
+
+
+def test_zones_match_needs_a_place_and_a_conflict_word():
+    zones = Zones(load_zones(), Store(":memory:"))
+    assert zones.match("Missile strike hits Taiwan port") == ["Taiwan Strait"]
+    assert zones.match("Taiwan chipmaker posts record profit") == []       # place, no conflict
+    assert zones.match("Missile test announced") == []                     # conflict, no place
+    assert zones.match("Houthi drone attack on tanker in Red Sea") == ["Red Sea / shipping"]
+    assert zones.match("Nigeria troops clash with bandits") == []          # "Niger" must not match inside "Nigeria"
+    assert zones.match("") == []
+
+
+def test_every_shipped_zone_has_news_keywords():
+    assert all(z.get("keywords") for z in load_zones())
+
+
+def test_zone_matching_on_real_looking_headlines():
+    zones = Zones(load_zones(), Store(":memory:"))
+    assert zones.match("Russia strikes deal with India on oil") == []           # "strikes deal" is not a strike
+    assert zones.match("Taiwan reports 30 Chinese military jets near island") == ["Taiwan Strait"]
+    assert zones.match("Israeli strike on Gaza kills dozens") == ["Middle East / Gulf"]
+    assert classify("Workers strike deal after walkout") == "other"

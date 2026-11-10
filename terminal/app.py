@@ -17,8 +17,10 @@ from terminal.brain.conflicts import Zones, load_zones
 from terminal.brain.news_rules import RulesAnalyser
 from terminal.bus import Bus
 from terminal.config import Config
-from terminal.events import to_json
+from terminal.events import ConflictEvent, to_json
 from terminal.feeds import yahoo
+from terminal.feeds.gdelt import classify
+from terminal.feeds.rss import news_id
 from terminal.notify import mac_notify
 from terminal.prices import Prices
 from terminal.settings import load_settings, validate
@@ -122,6 +124,10 @@ def create_app(
                 return
             store.add("news", event.id, payload["ts"], payload, replace=True)
             alerts = engine.on_news(payload)
+            for zone in zones.match(event.title):
+                # same id as the GDELT feed gives this headline, so one headline counts once
+                handle(ConflictEvent(news_id(zone + event.title), zone, classify(event.title), event.title,
+                                     event.url, event.ts))
         elif kind in STORED:
             if not store.add(kind, _event_key(payload), payload["ts"], payload):
                 return  # already seen: do not show it twice

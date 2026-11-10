@@ -195,3 +195,28 @@ def test_websocket_from_another_origin_is_refused(ctx):
             pass
     with ctx.websocket_connect("/ws", headers={"Origin": "http://127.0.0.1:8787"}):
         pass
+
+
+def test_conflict_news_feeds_zone_heat_without_gdelt(ctx):
+    now = time.time()
+    title = "Israel launches airstrike on Iran"
+    ctx.portal.call(ctx.bus.publish, NewsItem("s1", title, "https://e.com/s1", "BBC World", now, ""))
+    ctx.portal.call(ctx.bus.publish, NewsItem("s1", title, "https://e.com/s1b", "Al Jazeera", now, ""))   # second outlet
+    ctx.portal.call(ctx.bus.publish, NewsItem("s2", "Apple unveils new iPhone", "https://e.com/s2", "CNBC", now, ""))
+    zone = wait_for(lambda: [z for z in ctx.get("/api/conflicts").json() if z["count"]])
+    assert [(z["zone"], z["count"]) for z in zone] == [("Middle East / Gulf", 1)]
+    events = ctx.get("/api/events", params={"kind": "conflict"}).json()
+    assert [(e["title"], e["type"], e["url"]) for e in events] == [(title, "strike", "https://e.com/s1")]
+
+
+def test_same_headline_from_news_and_gdelt_counts_once(ctx):
+    from terminal.feeds.gdelt import parse_artlist
+    now = time.time()
+    title = "Missile strike hits Taiwan port"
+    ctx.portal.call(ctx.bus.publish, NewsItem("s3", title, "https://e.com/s3", "BBC World", now, ""))
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(now))
+    for event in parse_artlist({"articles": [{"title": title, "url": "https://g.com/1", "seendate": stamp}]}, "Taiwan Strait"):
+        ctx.portal.call(ctx.bus.publish, event)
+    wait_for(lambda: ctx.get("/api/events", params={"kind": "conflict"}).json())
+    time.sleep(0.2)
+    assert [z["count"] for z in ctx.get("/api/conflicts").json() if z["zone"] == "Taiwan Strait"] == [1]

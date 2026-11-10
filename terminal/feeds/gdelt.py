@@ -12,8 +12,11 @@ from terminal.feeds.rss import clean, news_id
 
 API = "https://api.gdeltproject.org/api/v2/doc/doc"
 TYPES = {
-    "strike": ("airstrike", "air strike", "missile", "drone", "strike", "shelling", "bombing", "bombard"),
-    "clash": ("clash", "firefight", "troops", "offensive", "invasion", "incursion", "attack", "killed"),
+    # bare "strike" is left out on purpose: "strikes deal" and labour strikes are not conflict
+    "strike": ("airstrike", "air strike", "missile", "drone", "strike on", "strikes on", "strike hit", "strike kill",
+               "shelling", "bombing", "bombard"),
+    "clash": ("clash", "firefight", "troops", "offensive", "invasion", "incursion", "attack", "killed", "military",
+              "warship", "fighter jet", "drills"),
     "sanction": ("sanction", "embargo", "export ban"),
     "blockade": ("blockade", "seize", "seized", "tanker", "naval"),
     "unrest": ("riot", "protest", "coup", "unrest", "uprising"),
