@@ -1,0 +1,475 @@
+name,lat,lon
+Abidjan,5.32,-4.04
+Abu Dhabi,24.47,54.37
+Abuja,9.09,7.53
+Accra,5.55,-0.22
+Addis Ababa,9.04,38.7
+Afghanistan,34.16,66.5
+Albania,40.65,20.11
+Algeria,27.4,2.81
+Algiers,36.77,3.05
+Amman,31.95,35.93
+Amsterdam,52.35,4.91
+Andorra,42.5,1.52
+Angola,-12.18,17.98
+Ankara,39.93,32.85
+Antananarivo,-18.91,47.51
+Antarctica,-79.84,35.89
+Apia,-13.84,-171.74
+Arctic,78.0,15.0
+Argentina,-33.5,-64.17
+Armenia,40.46,44.8
+Ashgabat,37.95,58.38
+Asmara,15.33,38.93
+Asunción,-25.29,-57.64
+Athens,37.99,23.73
+Atlanta,33.83,-84.4
+Auckland,-36.85,174.76
+Australia,-24.13,134.05
+Austria,47.52,14.13
+Azerbaijan,40.4,47.21
+Baghdad,33.34,44.39
+Baguio,16.43,120.57
+Bahamas,26.4,-77.15
+Baku,40.4,49.86
+Baltic Sea,58.0,20.0
+Bamako,12.65,-8.0
+Bandar Seri Begawan,4.88,114.93
+Bangkok,13.75,100.51
+Bangladesh,24.21,89.68
+Bangui,4.37,18.56
+Banjul,13.45,-16.59
+Basseterre,17.3,-62.72
+Beijing,39.93,116.39
+Beirut,33.87,35.51
+Belarus,53.82,28.42
+Belgium,50.79,4.8
+Belgrade,44.82,20.47
+Belize,17.2,-88.71
+Belmopan,17.25,-88.77
+Bengaluru,12.97,77.56
+Benin,10.32,2.35
+Berlin,52.52,13.4
+Bern,46.92,7.47
+Bhutan,27.54,90.04
+Bir Lehlou,26.12,-9.65
+Bishkek,42.88,74.58
+Bissau,11.87,-15.6
+Black Sea,43.4,34.3
+Bloemfontein,-29.12,26.23
+Bogota,4.6,-74.09
+Bolivia,-16.67,-64.59
+Bosnia and Herz.,44.09,18.07
+Bosnia and Herzegovina,44.09,18.07
+Botswana,-22.1,24.18
+Brasília,-15.78,-47.92
+Bratislava,48.15,17.12
+Brazil,-12.1,-49.56
+Brazzaville,-4.26,15.28
+Bridgetown,13.1,-59.62
+Britain,54.0,-2.5
+Brunei,4.45,114.55
+Brunei Darussalam,4.45,114.55
+Brussels,50.85,4.35
+Bucharest,44.44,26.1
+Budapest,47.5,19.08
+Buenos Aires,-34.6,-58.4
+Bujumbura,-3.38,29.36
+Bulgaria,42.51,25.16
+Burkina Faso,12.67,-1.36
+Burundi,-3.33,29.92
+Cairo,30.05,31.25
+Cambodia,12.65,104.5
+Cameroon,4.59,12.47
+Canada,60.32,-101.91
+Canberra,-35.28,149.13
+Cape Town,-33.92,18.43
+Caracas,10.5,-66.92
+Casablanca,33.6,-7.62
+Castries,14.0,-61.0
+Central African Rep.,6.99,20.91
+Central African Republic,6.99,20.91
+Chengdu,30.67,104.07
+Chicago,41.83,-87.75
+Chile,-38.15,-72.32
+China,35.0,104.0
+Chișinău,47.01,28.86
+Colombia,3.37,-73.17
+Colombo,6.93,79.86
+Conakry,9.53,-13.68
+Congo,0.14,15.9
+Costa Rica,10.07,-84.08
+Cotonou,6.4,2.52
+Crimea,45.3,34.4
+Croatia,45.81,16.37
+Cuba,21.33,-77.98
+Cyprus,34.91,33.08
+Czech Republic,49.88,15.38
+Czechia,49.88,15.38
+Côte d'Ivoire,7.49,-5.57
+Dakar,14.72,-17.48
+Damascus,33.5,36.3
+Dar es Salaam,-6.8,39.27
+Davos,46.8,9.84
+Dem. Rep. Congo,-1.86,23.46
+Dem. Rep. Korea,39.89,126.44
+Democratic Republic of the Congo,-1.86,23.46
+Denmark,55.97,9.02
+Denver,39.74,-104.99
+Dhaka,23.73,90.41
+Dili,-8.56,125.58
+Djibouti,11.98,42.5
+Dodoma,-6.18,35.75
+Doha,25.29,51.53
+Dominican Rep.,19.1,-70.65
+Dominican Republic,19.1,-70.65
+Donbas,48.0,37.8
+Dubai,25.2,55.27
+Dublin,53.34,-6.25
+Dushanbe,38.56,68.77
+ECB,50.11,8.7
+EU,50.85,4.35
+East Timor,-8.8,125.85
+Ecuador,-1.26,-78.19
+Egypt,26.19,29.45
+El Salvador,13.69,-88.89
+Eq. Guinea,2.33,8.99
+Equatorial Guinea,2.33,8.99
+Eritrea,15.79,38.29
+Estonia,58.72,25.87
+Ethiopia,8.03,39.09
+Falkland Is.,-51.61,-58.74
+Falkland Islands,-51.61,-58.74
+Falkland Islands / Malvinas,-51.61,-58.74
+Fed,38.89,-77.05
+Fiji,-17.83,177.98
+Finland,63.25,27.28
+Fr. S. Antarctic Lands,-49.3,69.12
+France,46.7,2.55
+Frankfurt,50.11,8.68
+Freetown,8.47,-13.24
+French Southern and Antarctic Lands,-49.3,69.12
+Funafuti,-8.52,179.22
+Gabon,-0.44,11.84
+Gaborone,-24.65,25.91
+Gambia,13.64,-15.0
+Gaza,31.4,34.4
+Geneva,46.21,6.14
+Georgetown,6.8,-58.17
+Germany,50.96,9.68
+Ghana,7.72,-1.04
+Greece,39.49,21.73
+Greenland,74.32,-39.34
+Guatemala,14.98,-90.5
+Guatemala City,14.62,-90.53
+Guinea-Bissau,12.16,-14.52
+Guyana,5.12,-58.94
+Haiti,19.26,-72.22
+Hanoi,21.04,105.85
+Harare,-17.82,31.04
+Hargeisa,9.56,44.07
+Havana,23.13,-82.37
+Helsinki,60.18,24.93
+Honduras,14.79,-86.89
+Hong Kong,22.3,114.17
+Honiara,-9.44,159.95
+Hormuz,26.6,56.3
+Houston,29.82,-95.34
+Hungary,47.09,19.45
+Iceland,64.78,-18.67
+India,22.69,79.36
+Indonesia,-0.95,101.89
+Iran,32.17,54.93
+Iraq,33.09,43.26
+Ireland,53.08,-7.8
+Islamabad,33.7,73.16
+Israel,30.91,34.85
+Istanbul,41.11,29.01
+Italy,44.73,11.08
+Ivory Coast,7.49,-5.57
+Jakarta,-6.17,106.83
+Jamaica,18.14,-77.32
+Japan,36.14,138.44
+Jerusalem,31.78,35.21
+Johannesburg,-26.17,28.03
+Juba,4.83,31.58
+Kabul,34.52,69.18
+Kampala,0.32,32.58
+Kashmir,34.1,74.8
+Kathmandu,27.72,85.31
+Kazakhstan,49.05,68.69
+Kenya,0.55,37.91
+Kharkiv,49.99,36.23
+Khartoum,15.59,32.53
+Kigali,-1.95,30.06
+Kingdom of eSwatini,-26.53,31.47
+Kingstown,13.15,-61.21
+Kinshasa,-4.33,15.31
+Kolkata,22.5,88.32
+Korea,37.5,127.0
+Kosovo,42.59,20.86
+Kremlin,55.75,37.62
+Kuala Lumpur,3.17,101.7
+Kuwait,29.41,47.31
+Kuwait City,29.37,47.98
+Kyiv,50.44,30.51
+Kyoto,35.03,135.75
+Kyrgyzstan,41.67,74.53
+København,55.68,12.56
+La Paz,-16.5,-68.15
+Laayoune,27.15,-13.2
+Lagos,6.45,3.39
+Lao PDR,19.43,102.53
+Laos,19.43,102.53
+Latvia,57.07,25.46
+Lebanon,34.13,35.99
+Lesotho,-29.48,28.25
+Liberia,6.45,-9.46
+Libreville,0.39,9.46
+Libya,26.64,18.01
+Lilongwe,-13.98,33.78
+Lima,-12.05,-77.05
+Lisbon,38.72,-9.15
+Lithuania,55.1,24.09
+Ljubljana,46.06,14.51
+Lobamba,-26.47,31.2
+Lomé,6.13,1.22
+London,51.5,-0.12
+Los Angeles,33.99,-118.18
+Luanda,-8.84,13.23
+Lusaka,-15.41,28.28
+Luxembourg,49.73,6.08
+Madagascar,-18.63,46.7
+Madrid,40.4,-3.69
+Majuro,7.1,171.38
+Malabo,3.75,8.78
+Malawi,-13.39,33.61
+Malaysia,2.53,113.84
+Malé,4.17,73.5
+Managua,12.15,-86.27
+Manama,26.24,50.58
+Manila,14.61,120.98
+Maputo,-25.95,32.59
+Maseru,-29.32,27.48
+Mauritania,19.59,-9.74
+Mbabane,-26.32,31.13
+Melbourne,-37.82,144.97
+Melekeok,7.49,134.63
+Mexico,23.92,-102.29
+Mexico City,19.44,-99.13
+Miami,25.79,-80.23
+Minsk,53.9,27.56
+Mogadishu,2.07,45.36
+Moldova,47.43,28.49
+Monaco,43.74,7.41
+Mongolia,46.0,104.15
+Monrovia,6.31,-10.8
+Montenegro,42.8,19.14
+Monterrey,25.67,-100.33
+Montevideo,-34.86,-56.17
+Morocco,31.65,-7.19
+Moroni,-11.7,43.24
+Moscow,55.75,37.61
+Mozambique,-13.94,37.84
+Mumbai,19.08,72.88
+Muscat,23.61,58.59
+Myanmar,21.57,95.8
+N'Djamena,12.12,15.05
+N. Cyprus,35.22,33.69
+Nairobi,-1.28,36.81
+Namibia,-20.58,17.11
+Nassau,25.08,-77.35
+Naypyidaw,19.77,96.12
+Nepal,28.3,83.64
+Netherlands,52.42,5.61
+New Caledonia,-21.06,165.08
+New Delhi,28.6,77.2
+New York,40.75,-73.98
+New Zealand,-39.76,172.79
+Niamey,13.52,2.11
+Nicaragua,12.67,-85.07
+Nicosia,35.17,33.37
+Nigeria,9.44,7.5
+North Korea,39.0,125.75
+North Macedonia,41.56,21.56
+Northern Cyprus,35.22,33.69
+Norway,61.36,9.68
+Nouakchott,18.09,-15.98
+Nuku'alofa,-21.14,-175.22
+Nur-Sultan,51.18,71.43
+OPEC,48.21,16.37
+Odesa,46.48,30.72
+Oman,22.12,57.34
+Oslo,59.92,10.75
+Ottawa,45.42,-75.7
+Ouagadougou,12.37,-1.53
+Pakistan,29.33,68.55
+Palestine,32.05,35.29
+Palikir,6.92,158.15
+Panama,8.72,-80.35
+Panama Canal,9.1,-79.7
+Panama City,8.97,-79.53
+Papua New Guinea,-5.7,143.91
+Paraguay,-21.67,-60.15
+Paramaribo,5.84,-55.17
+Paris,48.87,2.33
+Pentagon,38.87,-77.06
+Peru,-12.98,-72.9
+Philippines,11.2,122.47
+Phnom Penh,11.55,104.91
+Podgorica,42.47,19.27
+Poland,51.99,19.49
+Port Louis,-20.17,57.5
+Port Moresby,-9.46,147.19
+Port Vila,-17.73,168.32
+Port-au-Prince,18.54,-72.34
+Port-of-Spain,10.65,-61.52
+Porto-Novo,6.48,2.62
+Portugal,39.61,-8.27
+Prague,50.09,14.46
+Praia,14.92,-23.52
+Pretoria,-25.7,28.23
+Pristina,42.67,21.17
+Puerto Rico,18.23,-66.48
+Putrajaya,2.91,101.7
+Pyongyang,39.02,125.75
+Qatar,25.24,51.14
+Quito,-0.21,-78.5
+Rabat,34.03,-6.84
+Red Sea,20.0,38.5
+Republic of Korea,36.38,128.13
+Republic of Serbia,44.19,20.79
+Republic of the Congo,0.14,15.9
+Reykjavík,64.15,-21.95
+Riga,56.95,24.1
+Rio de Janeiro,-22.92,-43.23
+Riyadh,24.64,46.77
+Romania,45.73,24.97
+Rome,41.9,12.48
+Roseau,15.3,-61.39
+Russia,55.75,37.62
+Russian Federation,58.25,44.69
+Rwanda,-1.9,30.1
+S. Sudan,7.23,30.39
+Sahel,15.0,2.0
+Saint George's,12.05,-61.74
+Saint John's,17.12,-61.85
+San Francisco,37.77,-122.42
+San José,9.94,-84.09
+San Marino,43.94,12.44
+San Salvador,13.71,-89.2
+Sanaa,15.36,44.2
+Santiago,-33.45,-70.67
+Santo Domingo,18.47,-69.9
+Sarajevo,43.85,18.38
+Saudi Arabia,23.81,44.7
+Senegal,15.14,-14.78
+Seoul,37.57,127.0
+Serbia,44.19,20.79
+Shanghai,31.23,121.47
+Sierra Leone,8.62,-11.76
+Silicon Valley,37.39,-122.06
+Singapore,1.29,103.85
+Skopje,42.0,21.43
+Slovakia,48.73,19.05
+Slovenia,46.06,14.92
+Sofia,42.69,23.31
+Solomon Is.,-8.03,159.17
+Solomon Islands,-8.03,159.17
+Somalia,3.57,45.19
+Somaliland,9.44,46.73
+South Africa,-29.71,23.67
+South China Sea,12.0,114.0
+South Korea,37.5,127.0
+South Sudan,7.23,30.39
+Spain,40.09,-3.46
+Sri Jayawardenepura Kotte,6.9,79.95
+Sri Lanka,7.58,80.7
+Stockholm,59.35,18.1
+Strait of Hormuz,26.6,56.3
+Sucre,-19.04,-65.26
+Sudan,16.33,29.26
+Suez,30.0,32.55
+Suriname,4.14,-55.91
+Suva,-18.13,178.44
+Sweden,65.86,19.02
+Switzerland,46.72,7.46
+Sydney,-33.92,151.18
+Syria,35.01,38.28
+São Paulo,-23.56,-46.63
+São Tomé,0.33,6.73
+Taipei,25.04,121.57
+Taiwan,23.65,120.87
+Taiwan Strait,24.5,119.5
+Tajikistan,38.2,72.59
+Tallinn,59.43,24.73
+Tanzania,-6.05,34.96
+Tarawa,1.34,173.02
+Tashkent,41.31,69.29
+Tbilisi,41.73,44.79
+Tegucigalpa,14.1,-87.22
+Tehran,35.67,51.42
+Tel Aviv,32.08,34.78
+Thailand,15.46,101.07
+The Bahamas,26.4,-77.15
+The Gambia,13.64,-15.0
+The Hague,52.08,4.27
+Thimphu,27.47,89.64
+Timor-Leste,-8.8,125.85
+Tirana,41.33,19.82
+Togo,8.81,1.06
+Tokyo,35.69,139.75
+Toronto,43.7,-79.42
+Trinidad and Tobago,11.0,-60.92
+Tripoli,32.89,13.18
+Tunis,36.8,10.18
+Tunisia,33.69,9.01
+Turkmenistan,39.86,58.68
+Türkiye,39.0,35.0
+U.K.,54.0,-2.5
+U.S.,39.5,-98.5
+UK,54.0,-2.5
+Uganda,1.97,32.95
+Ukraine,49.72,32.14
+Ulaanbaatar,47.92,106.91
+United Arab Emirates,23.47,54.55
+United Kingdom,54.4,-2.12
+United Republic of Tanzania,-6.05,34.96
+United States,39.54,-97.48
+United States of America,39.54,-97.48
+Uruguay,-32.96,-55.97
+Uzbekistan,41.69,64.01
+Vaduz,47.13,9.52
+Valletta,35.9,14.51
+Valparaíso,-33.05,-71.62
+Vancouver,49.28,-123.12
+Vanuatu,-15.37,166.91
+Vatican City,41.9,12.45
+Venezuela,7.18,-64.6
+Vienna,48.2,16.36
+Vientiane,17.97,102.6
+Vietnam,21.72,105.39
+Vilnius,54.68,25.32
+W. Sahara,23.97,-12.63
+Wall Street,40.706,-74.009
+Warsaw,52.25,21.0
+"Washington,  D.C.",38.9,-77.01
+Wellington,-41.3,174.78
+West Bank,31.9,35.2
+Western Sahara,23.97,-12.63
+White House,38.9,-77.04
+Windhoek,-22.57,17.08
+Yamoussoukro,6.82,-5.28
+Yangon,16.79,96.16
+Yaoundé,3.87,11.51
+Yemen,15.33,45.87
+Yerevan,40.18,44.51
+Zagreb,45.8,16.0
+Zambia,-14.66,26.4
+Zimbabwe,-18.91,29.93
+Zurich,47.37,8.54
+eSwatini,-26.53,31.47
+Ürümqi,43.81,87.57
+Ōsaka,34.75,135.46
+Washington,38.9,-77.04
+America,39.54,-97.48

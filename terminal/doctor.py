@@ -9,7 +9,9 @@ import websockets
 from terminal.brain.conflicts import load_zones
 from terminal.config import Config
 from terminal.feeds.base import scrub
-from terminal.feeds import crypto, finnhub, gdelt, onchain, rss, sec, yahoo
+from datetime import date
+
+from terminal.feeds import crypto, econ, finnhub, gdelt, onchain, planes, quakes, rss, sec, ships, yahoo
 from terminal.symbols import resolve
 
 Check = tuple[str, Callable[[], Awaitable[str]]]
@@ -104,7 +106,31 @@ def default_checks(config: Config) -> list[Check]:
             response.raise_for_status()
             return f"{len(gdelt.parse_artlist(response.json(), zone['name']))} headlines for {zone['name']}"
 
+    def get(fetch, what: str, timeout: float = 8) -> Callable[[], Awaitable[str]]:
+        async def check() -> str:
+            async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers={"User-Agent": rss.USER_AGENT}) as client:
+                return f"{len(await fetch(client))} {what}"
+        return check
+
+    async def aisstream() -> str:
+        need(config.aisstream_key, "AISSTREAM_KEY", "free key at aisstream.io")
+        box = ships.CHOKEPOINTS["English Channel"]
+        return await _first(ships.URL, {"APIKey": config.aisstream_key, "BoundingBoxes": [[list(box[0]), list(box[1])]]},
+                            lambda m: "MetaData" in m)
+
+    async def fred() -> str:
+        need(config.fred_key, "FRED_KEY", "free key at fred.stlouisfed.org/docs/api/api_key.html")
+        async with httpx.AsyncClient(timeout=8) as client:
+            return f"{len(await econ.fred(client, config.fred_key, 'UNRATE'))} unemployment readings"
+
     return [
+        ("planes (adsb.lol)", get(lambda c: planes.around(c, 51.5, 0.0, 100), "aircraft near London")),
+        ("military planes", get(planes.military, "military aircraft")),
+        ("ships (aisstream)", aisstream),
+        ("earthquakes (usgs)", get(quakes.recent, "earthquakes today")),
+        ("economic calendar", get(econ.calendar, "events this week")),
+        ("treasury curve", get(lambda c: econ.curve(c, date.today()), "daily curves", 40)),
+        ("fred", fred),
         ("yahoo", yahoo_check),
         ("binance", exchange_check(0)), ("coinbase", exchange_check(1)), ("kraken", exchange_check(2)),
         ("finnhub stream", finnhub_stream), ("finnhub news", finnhub_news),

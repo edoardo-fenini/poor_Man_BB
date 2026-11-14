@@ -53,3 +53,12 @@ async def test_stock_whale_feeds():
     assert out["sec-filings"].state == "disabled" and "volume" in names(without)
     _, with_contact = await statuses(Config("", "", "Jane Doe jane@example.com"))
     assert "sec-filings" in names(with_contact)
+
+
+async def test_ships_need_a_key_and_a_fleet():
+    from terminal.feeds.ships import Fleet
+    out, without = await statuses(Config("", "", ""))
+    assert out["ships"].state == "disabled" and "AISSTREAM_KEY" in out["ships"].detail
+    bus = Bus()
+    with_key = build_feeds(Config("", "", "", aisstream_key="k"), Store(":memory:"), bus, Prices(), Fleet())
+    assert names(with_key) - names(without) == {"ships"}

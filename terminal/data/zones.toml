@@ -1,57 +1,75 @@
 # Conflict zones. `query` is a GDELT search expression for the place; `keywords` find the place in news
-# headlines (a capital letter means exact case); `assets` are what the zone moves.
+# headlines (a capital letter means exact case); `assets` are what the zone moves; `lat`/`lon` place it on the map.
 # direction: 1 up when the zone heats up, -1 down, 0 affected with unclear direction.
 
 [[zone]]
 name = "Middle East / Gulf"
+lat = 30.0
+lon = 45.0
 keywords = ["Israel", "Gaza", "Iran", "Tehran", "Lebanon", "Hezbollah", "Hormuz", "Syria", "Iraq", "West Bank", "Saudi"]
 query = "(israel OR gaza OR iran OR lebanon OR hezbollah OR hormuz OR \"saudi arabia\")"
 assets = [{symbol = "CL=F", direction = 1}, {symbol = "BZ=F", direction = 1}, {symbol = "GC=F", direction = 1}, {symbol = "XLE", direction = 1}, {symbol = "ITA", direction = 1}, {symbol = "JETS", direction = -1}]
 
 [[zone]]
 name = "Red Sea / shipping"
+lat = 15.5
+lon = 42.0
 keywords = ["Red Sea", "Houthi", "Houthis", "Yemen", "Suez"]
 query = "(\"red sea\" OR houthi OR yemen OR \"suez canal\" OR \"bab el-mandeb\")"
 assets = [{symbol = "BZ=F", direction = 1}, {symbol = "ZIM", direction = 1}]
 
 [[zone]]
 name = "Taiwan Strait"
+lat = 24.0
+lon = 120.5
 keywords = ["Taiwan", "Taipei"]
 query = "(taiwan OR \"taiwan strait\")"
 assets = [{symbol = "TSM", direction = -1}, {symbol = "SMH", direction = -1}, {symbol = "NVDA", direction = -1}, {symbol = "GC=F", direction = 1}]
 
 [[zone]]
 name = "Ukraine / Black Sea"
+lat = 48.5
+lon = 34.0
 keywords = ["Ukraine", "Kyiv", "Black Sea", "Crimea", "Russia", "Russian", "Moscow"]
 query = "(ukraine OR kyiv OR \"black sea\" OR crimea)"
 assets = [{symbol = "ZW=F", direction = 1}, {symbol = "NG=F", direction = 1}, {symbol = "ITA", direction = 1}, {symbol = "EZU", direction = -1}]
 
 [[zone]]
 name = "Korean peninsula"
+lat = 38.5
+lon = 127.0
 keywords = ["North Korea", "Pyongyang", "Korean peninsula", "Kim Jong Un"]
 query = "(\"north korea\" OR pyongyang OR \"korean peninsula\")"
 assets = [{symbol = "EWY", direction = -1}, {symbol = "GC=F", direction = 1}]
 
 [[zone]]
 name = "South China Sea"
+lat = 12.0
+lon = 114.0
 keywords = ["South China Sea", "Spratly", "Scarborough"]
 query = "(\"south china sea\" OR spratly OR scarborough)"
 assets = [{symbol = "FXI", direction = -1}, {symbol = "GC=F", direction = 1}]
 
 [[zone]]
 name = "India-Pakistan"
+lat = 33.5
+lon = 74.5
 keywords = ["Kashmir", "Line of Control", "Pakistan"]
 query = "(kashmir OR \"line of control\")"
 assets = [{symbol = "INDA", direction = -1}]
 
 [[zone]]
 name = "Sahel / West Africa"
+lat = 15.0
+lon = 5.0
 keywords = ["Niger", "Mali", "Burkina Faso", "Sahel", "Sudan"]
 query = "(niger OR mali OR \"burkina faso\" OR sahel OR sudan)"
 assets = [{symbol = "GC=F", direction = 1}, {symbol = "URA", direction = 1}]
 
 [[zone]]
 name = "Venezuela / Caribbean"
+lat = 8.0
+lon = -66.0
 keywords = ["Venezuela", "Caracas", "Essequibo"]
 query = "(venezuela OR caracas OR essequibo)"
 assets = [{symbol = "CL=F", direction = 1}, {symbol = "CVX", direction = 0}]

@@ -18,13 +18,48 @@ async def fake_bars(symbols, period, interval):
             for s in symbols if s.id != "NODATA"}
 
 
+class FakeSrc:
+    """Stands in for terminal.feeds.fundamentals: fixed company data, no network."""
+
+    @staticmethod
+    def info(symbol):
+        return {"longName": "Test Corp", "sector": "Technology", "industry": "Software", "regularMarketPrice": 100.0,
+                "marketCap": 1e9, "totalDebt": 2e8, "totalCash": 5e7, "beta": 1.2, "freeCashflow": 8e7,
+                "sharesOutstanding": 1e7, "trailingPE": 20.0, "fiftyTwoWeekLow": 80.0, "fiftyTwoWeekHigh": 120.0,
+                "ebitda": 1.5e8, "industryKey": "software"}
+
+    @staticmethod
+    def statements(symbol):
+        if symbol == "SPY":
+            return {k: {"periods": [], "rows": {}} for k in ("income", "balance", "cash")}
+        return {
+            "income": {"periods": ["2025-12-31", "2024-12-31"], "rows": {
+                "Total Revenue": [5e8, 4e8], "Gross Profit": [3e8, 2.2e8], "Operating Income": [1.2e8, 9e7],
+                "EBIT": [1.2e8, 9e7], "Net Income": [9e7, 6e7], "Interest Expense": [1e7, 1e7], "Tax Rate For Calcs": [0.2, 0.2]}},
+            "balance": {"periods": ["2025-12-31", "2024-12-31"], "rows": {
+                "Total Assets": [1e9, 9e8], "Current Assets": [4e8, 3e8], "Current Liabilities": [2e8, 2e8],
+                "Total Liabilities Net Minority Interest": [5e8, 5e8], "Stockholders Equity": [5e8, 4e8],
+                "Retained Earnings": [3e8, 2e8], "Working Capital": [2e8, 1e8], "Long Term Debt": [1.5e8, 2e8],
+                "Total Debt": [2e8, 2.5e8], "Ordinary Shares Number": [1e7, 1e7], "Invested Capital": [7e8, 6.5e8]}},
+            "cash": {"periods": ["2025-12-31", "2024-12-31"], "rows": {"Operating Cash Flow": [1.1e8, 8e7], "Free Cash Flow": [8e7, 5e7]}},
+        }
+
+    @staticmethod
+    def options(symbol, index=0):
+        def side(call):
+            return [{"strike": float(k), "last": 5.0, "bid": 4.9, "ask": 5.1, "volume": 2000.0 if k == 100 and call else 10.0,
+                     "oi": 100.0, "iv": 0.3} for k in (90, 95, 100, 105, 110)]
+        return {"expiries": ["2099-01-15", "2099-02-19"], "expiry": ["2099-01-15", "2099-02-19"][min(index, 1)],
+                "calls": side(True), "puts": side(False)}
+
+
 @pytest.fixture
 def ctx():
     """A running app with no feeds and no network."""
     bus, store, prices = Bus(), Store(":memory:"), Prices()
     notified = []
     app = create_app(Config("", "", ""), store, bus, prices, feeds=[], history=fake_history, bars=fake_bars,
-                     notify=lambda title, body: notified.append((title, body)))
+                     notify=lambda title, body: notified.append((title, body)), src=FakeSrc)
     with TestClient(app, base_url="http://127.0.0.1:8787") as client:
         client.bus, client.store, client.notified = bus, store, notified
         connect = client.websocket_connect  # TestClient ignores base_url for WebSockets: give the real host
@@ -47,7 +82,7 @@ class Live:
             s.bind(("127.0.0.1", 0))
             port = s.getsockname()[1]
         self.app = create_app(Config("", "", "", port=port), self.store, self.bus, self.prices, feeds=[], history=fake_history, bars=fake_bars,
-                              notify=lambda title, body: None)
+                              notify=lambda title, body: None, src=FakeSrc)
         self.url = f"http://127.0.0.1:{port}"
         self.server = uvicorn.Server(uvicorn.Config(self.app, host="127.0.0.1", port=port, log_level="error"))
         self.loop = asyncio.new_event_loop()

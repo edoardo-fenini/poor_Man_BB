@@ -27,7 +27,7 @@ button:hover, button.on { background: var(--text); color: #000; }
 #cmd { width: 420px; background: #000; border: 1px solid var(--dim); color: var(--white); text-transform: uppercase; }
 #cmd:focus { outline: 1px solid var(--text); }
 #cmd::placeholder { text-transform: none; color: #555; }
-#cmd-msg { color: var(--down); flex: 1; }
+#cmd-msg { color: var(--down); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #feeds { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 #feeds span { padding: 0 4px; border: 1px solid var(--line); }
 .s-ok { color: var(--up); } .s-down { color: #000; background: var(--down); }
@@ -135,3 +135,62 @@ dialog#settings::backdrop { background: rgba(0, 0, 0, .7); }
 #settings .add input { width: 110px; }
 #settings .buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 #settings-error { color: var(--down); min-height: 1.3em; }
+
+/* ---- function screens and the map: laid over the dashboard, which keeps running underneath */
+main { position: relative; }
+#quick { display: flex; gap: 3px; }
+.screen { position: absolute; inset: 0; z-index: 5; background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+.screen h2 {
+  margin: 0; padding: 3px 8px; font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #fff;
+  background: #0a2a6b; border-bottom: 1px solid #1d4ed8; display: flex; gap: 10px; align-items: center;
+}
+.screen h2 .close { margin-left: auto; background: #7a0d0d; color: #fff; border-color: #b91c1c; }
+.screen h2 button { font-weight: 400; }
+#fn-menu, #map-layers { display: flex; gap: 3px; flex-wrap: wrap; }
+#fn-menu button { color: var(--text); padding: 0 4px; }
+#fn-menu button:hover, #fn-menu button.on { color: #000; }
+#fn-body { padding: 6px 10px 20px; }
+#fn-body h3 { margin: 12px 0 3px; font-size: 11px; color: #000; background: var(--text); padding: 1px 6px; letter-spacing: .06em; }
+#fn-body .note { color: var(--dim); margin-top: 12px; max-width: 110ch; }
+#fn-body .text { color: var(--white); max-width: 130ch; white-space: pre-wrap; }
+#fn-body .msg { color: var(--down); font-size: 14px; margin-top: 20px; }
+#fn-body .loading { color: var(--dim); margin-top: 20px; }
+.kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 0 24px; }
+.kv > div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid #151515; padding: 1px 0; }
+.kv > div.wide { grid-column: 1 / -1; }
+.kv > div > span:first-child { color: var(--dim); }
+.kv > div > span:last-child { color: var(--white); text-align: right; overflow-wrap: anywhere; }
+table.grid { border-collapse: collapse; width: 100%; }
+table.grid th { text-align: left; color: var(--dim); font-weight: 400; border-bottom: 1px solid var(--line); padding: 1px 8px; position: sticky; top: 0; background: var(--panel); white-space: nowrap; }
+table.grid td { padding: 1px 8px; border-bottom: 1px solid #111; color: var(--white); }
+table.grid tr:hover td { background: #151515; }
+table.grid .n { text-align: right; white-space: nowrap; }
+.kv .up, table.grid .up { color: var(--up) !important; } .kv .down, table.grid .down { color: var(--down) !important; }
+.kv .dim, table.grid .dim { color: var(--dim) !important; } .hot { color: var(--text) !important; font-weight: 700; }
+.link { cursor: pointer; text-decoration: underline dotted; }
+svg.line { width: 100%; max-width: 1100px; height: 240px; display: block; }
+svg.line text { fill: var(--dim); font: 10px ui-monospace, Menlo, monospace; }
+svg.line .axis { stroke: #222; stroke-width: 1; }
+
+#map-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 330px; }
+#map-canvas { background: #000; min-height: 0; }
+#map-side { border-left: 1px solid var(--line); padding: 4px 8px; }
+#map-side h3 { margin: 10px 0 3px; font-size: 11px; color: #000; background: var(--text); padding: 1px 6px; }
+#map-side .row { grid-template-columns: minmax(0, 1fr) 40px 40px 40px; padding: 1px 2px; }
+#map-side .row span + span { text-align: right; }
+#map-side .head { color: var(--dim); cursor: default; }
+#map-side p { color: var(--dim); margin: 4px 0; }
+#map-layers button.on { background: var(--text); color: #000; }
+#map-msg { color: var(--text); font-weight: 400; }
+.leaflet-container { background: #000; font: inherit; }
+.leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.75) contrast(1.1) saturate(.4); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #0b0b0b; color: var(--text); border: 1px solid var(--text); border-radius: 0; }
+.leaflet-popup-content { margin: 8px 10px; font-size: 11px; max-height: 260px; overflow-y: auto; }
+.leaflet-popup-content b { color: var(--white); }
+.leaflet-popup-content .story { margin-top: 4px; color: var(--white); }
+.leaflet-tooltip { background: #0b0b0b; color: var(--text); border: 1px solid var(--line); border-radius: 0; font-size: 11px; }
+.leaflet-tooltip::before { display: none; }
+.leaflet-control-attribution { background: rgba(0, 0, 0, .6) !important; color: #666; }
+.leaflet-control-attribution a { color: #888; }
+.leaflet-bar a { background: #111; color: var(--text); border-color: var(--line); }
+#cmd-msg.hint { color: var(--dim); }

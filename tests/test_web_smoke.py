@@ -172,3 +172,48 @@ def test_panels_go_stale_when_the_server_disappears(page, live):
     live.stop()
     for tag in ("#tag-prices", "#tag-news", "#tag-bottom"):
         page.wait_for_function(f"document.querySelector('{tag}').textContent.startsWith('STALE')")
+
+
+def test_function_screen_opens_keeps_the_symbol_and_closes_with_escape(page):
+    page.fill("#cmd", "AAPL US EQUITY DES GO")
+    page.press("#cmd", "Enter")
+    page.wait_for_function("document.querySelector('#fn-title').textContent.includes('Test Corp')")
+    assert "Technology" in page.text_content("#fn-body")
+    page.fill("#cmd", "OMON")   # no symbol typed: the last one stays loaded
+    page.press("#cmd", "Enter")
+    page.wait_for_function("document.querySelector('#fn-title').textContent.includes('AAPL  OPTION MONITOR')")
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#fn", state="hidden")
+
+
+def test_function_error_is_shown_on_the_screen(page):
+    page.fill("#cmd", "BTC FA")
+    page.press("#cmd", "Enter")
+    page.wait_for_function("document.querySelector('#fn-body .msg') && document.querySelector('#fn-body .msg').textContent.includes('stocks')")
+
+
+def test_clicking_a_symbol_in_a_function_screen_loads_its_chart(page):
+    page.fill("#cmd", "WEI")
+    page.press("#cmd", "Enter")
+    page.click("#fn-body td.link >> text=Nasdaq")
+    page.wait_for_selector("#fn", state="hidden")
+    page.wait_for_function("document.querySelector('#chart-title').textContent.includes('^IXIC')")
+
+
+def test_map_opens_with_layers_and_no_innerhtml(page, live):
+    page.route("**/tile.openstreetmap.org/**", lambda route: route.abort())   # no network in tests
+    page.route("**/api/map/planes*", lambda route: route.fulfill(json=[]))
+    page.route("**/api/map/military", lambda route: route.fulfill(json=[{"id": "a", "flight": "<b>X</b>", "reg": "", "type": "C17", "lat": 30, "lon": 30, "alt": 1, "speed": 1, "track": 1, "mil": True}]))
+    page.route("**/api/map/quakes", lambda route: route.fulfill(json=[]))
+    live.publish(NewsItem("g1", "Oil jumps after strike on Iran port", "https://example.com/1", "Reuters", 2e9, ""))
+    page.wait_for_selector("#news .news")
+    page.click('#quick [data-go="MAP"]')
+    page.wait_for_selector("#map-canvas.leaflet-container")
+    assert page.locator("#map-layers button").count() == 6
+    page.wait_for_function("mapState.layers.news.getLayers().length === 1 && mapState.layers.military.getLayers().length === 1")
+    page.wait_for_function("document.querySelector('#map-side').textContent.includes('AISSTREAM_KEY') || document.querySelector('#map-side').textContent.includes('No ship feed')")
+    for name in ("functions.js", "map.js"):
+        js = (WEB / name).read_text()
+        assert "innerHTML" not in js and "insertAdjacentHTML" not in js and "document.write" not in js
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#map", state="hidden")

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Terminal</title>
+<link rel="stylesheet" href="/static/vendor/leaflet.css">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -12,8 +13,9 @@
 <div id="cmdbar">
   <span class="prompt">&gt;</span>
   <input id="cmd" autocomplete="off" spellcheck="false" autofocus
-         placeholder="SYMBOL Enter | +SYM add | -SYM remove | / focus">
+         placeholder="AAPL | AAPL DES | WEI | MAP | HELP | +SYM add | -SYM remove">
   <span id="cmd-msg"></span>
+  <span id="quick"><button data-go="HELP" title="All functions">HELP</button><button data-go="MAP" title="World map">MAP</button><button data-go="TOP" title="Top news">TOP</button><button data-go="WEI" title="World equity indices">WEI</button><button data-go="ECO" title="Economic calendar">ECO</button></span>
   <span id="feeds"></span>
   <button id="mute" title="Mute alerts">SOUND ON</button>
   <button id="open-settings" title="Alert settings">SETTINGS</button>
@@ -47,11 +49,23 @@
     <div id="conflicts" class="tab" hidden><div id="zones" class="scroll"></div><div id="zone-news" class="scroll"></div></div>
     <div id="alerts" class="scroll tab" hidden></div>
   </section>
+  <section id="fn" class="screen" hidden>
+    <h2><span id="fn-title"></span><span id="fn-menu"></span><button class="close" title="Back to the dashboard (Esc)">ESC HOME</button></h2>
+    <div id="fn-body" class="scroll"></div>
+  </section>
+  <section id="map" class="screen" hidden>
+    <h2><span>MAP</span><span id="map-layers"></span><span id="map-msg"></span><button class="close" title="Back to the dashboard (Esc)">ESC HOME</button></h2>
+    <div id="map-wrap"><div id="map-canvas"></div><div id="map-side" class="scroll"></div></div>
+  </section>
 </main>
 <footer>Free data, delays vary by source. Not financial advice.
-  Charts by <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a> Lightweight Charts.</footer>
+  Charts by <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a> Lightweight Charts.
+  Map &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.</footer>
 <dialog id="settings"></dialog>
 <script src="/static/vendor/lightweight-charts.js"></script>
+<script src="/static/vendor/leaflet.js"></script>
 <script src="/static/app.js"></script>
+<script src="/static/functions.js"></script>
+<script src="/static/map.js"></script>
 </body>
 </html>

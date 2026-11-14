@@ -13,6 +13,8 @@ class Config:
     db_path: str = "terminal.db"
     host: str = "127.0.0.1"
     port: int = 8787
+    aisstream_key: str = ""
+    fred_key: str = ""
 
 
 def load_config() -> Config:
@@ -24,4 +26,6 @@ def load_config() -> Config:
         sec_user_agent=env("SEC_USER_AGENT", "").strip(),
         db_path=env("TERMINAL_DB", "terminal.db"),
         port=int(env("TERMINAL_PORT", "8787")),
+        aisstream_key=env("AISSTREAM_KEY", "").strip(),
+        fred_key=env("FRED_KEY", "").strip(),
     )

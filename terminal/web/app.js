@@ -256,7 +256,7 @@ async function runCommand(raw) {
       const gone = text.slice(1).toUpperCase();
       await putJson("/api/watchlist", ids.filter((id) => id !== gone && id.replace("-USD", "") !== gone));
       await loadWatchlist();
-    } else if (!(await loadSymbol(text))) return;
+    } else if (!(await go(text))) return;   // functions.js: a function (AAPL DES, WEI, MAP) or a plain symbol
     $("#cmd").value = "";
   } catch (e) { $("#cmd-msg").textContent = "NOT FOUND: " + text.replace(/^[+-]/, ""); }
 }

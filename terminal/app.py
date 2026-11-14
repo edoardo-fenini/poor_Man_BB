@@ -18,7 +18,10 @@ from terminal.brain.news_rules import RulesAnalyser
 from terminal.bus import Bus
 from terminal.config import Config
 from terminal.events import ConflictEvent, to_json
-from terminal.feeds import yahoo
+from terminal import functions
+from terminal.feeds import fundamentals, planes, quakes, yahoo
+from terminal.feeds.ships import Fleet
+from terminal.geo import locate
 from terminal.feeds.gdelt import classify
 from terminal.feeds.rss import news_id
 from terminal.notify import mac_notify
@@ -64,6 +67,8 @@ def create_app(
     bars=yahoo.bars,
     analyser: Analyser | None = None,
     notify: Callable[[str, str], None] = mac_notify,
+    src=fundamentals,
+    fleet: Fleet | None = None,
 ) -> FastAPI:
     clients: set[asyncio.Queue] = set()
     status: dict[str, dict] = {}
@@ -282,6 +287,80 @@ def create_app(
             if (price := prices.last(s.id)) is not None:
                 out[s.id] = {"price": price, "ts": now - prices.age(s.id, now)}
         return out
+
+    fn_ctx = functions.Ctx(src, lambda *a: app.state.bars(*a), store, lambda: watchlist_symbols(store), config)
+
+    @app.get("/api/fn")
+    def list_functions():
+        return ([{"name": f.name, "about": f.about, "symbol": f.symbol} for f in functions.FUNCTIONS.values()]
+                + [{"name": name, "about": about, "symbol": False} for name, about in functions.PAGE_FUNCTIONS.items()])
+
+    @app.get("/api/fn/{name}")
+    async def run_function(name: str, symbol: str = "", arg: str = ""):
+        fn = functions.FUNCTIONS.get(name.upper())
+        if not fn:
+            return _error(404, "unknown function")
+        resolved = resolve(symbol) if symbol else None
+        if fn.symbol and not resolved:
+            return _error(404, "symbol not found" if symbol else f"{fn.name} needs a symbol, e.g. AAPL {fn.name}")
+        try:
+            return await fn.build(fn_ctx, resolved, arg.strip()[:20])
+        except functions.Unavailable as exc:
+            return _error(404, str(exc))
+        except Exception as exc:
+            log.warning("function %s failed for %s: %s: %s", fn.name, symbol, type(exc).__name__, exc)
+            return _error(502, "data source unavailable")
+
+    async def map_layer(key: str, ttl: float, fetch) -> list | JSONResponse:
+        async def make():
+            async with functions.http() as client:
+                return await fetch(client)
+        try:
+            return await functions.remember(key, ttl, make)
+        except Exception as exc:
+            log.warning("map layer %s failed: %s: %s", key, type(exc).__name__, exc)
+            return _error(502, "data source unavailable")
+
+    @app.get("/api/map/news")
+    def map_news():
+        """Recent stories grouped by the place their headline names."""
+        places: dict[str, dict] = {}
+        for n in store.recent("news", 600):
+            if found := locate(n["title"]):
+                name, lat, lon = found
+                spot = places.setdefault(name, {"place": name, "lat": lat, "lon": lon, "stories": []})
+                if len(spot["stories"]) < 12:
+                    spot["stories"].append({"title": n["title"], "url": n["url"], "ts": n["ts"], "source": n["source"],
+                                            "weight": n["analysis"]["weight"], "sentiment": n["analysis"]["sentiment"]})
+        return list(places.values())
+
+    @app.get("/api/map/zones")
+    def map_zones():
+        where = {z["name"]: z for z in load_zones()}
+        return [{**z, "lat": where[z["zone"]]["lat"], "lon": where[z["zone"]]["lon"]} for z in zones.state()
+                if "lat" in where[z["zone"]]]
+
+    @app.get("/api/map/planes")
+    async def map_planes(lat: float, lon: float, radius: float = 250):
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            return _error(400, "bad position")
+        return await map_layer(f"planes:{lat:.0f}:{lon:.0f}:{radius:.0f}", 10,
+                               lambda client: planes.around(client, round(lat), round(lon), radius))
+
+    @app.get("/api/map/military")
+    async def map_military():
+        return await map_layer("military", 20, planes.military)
+
+    @app.get("/api/map/quakes")
+    async def map_quakes():
+        return await map_layer("quakes", 300, quakes.recent)
+
+    @app.get("/api/map/ships")
+    def map_ships():
+        now = time.time()
+        if fleet is None:
+            return {"ships": [], "traffic": []}
+        return {"ships": fleet.positions(now), "traffic": fleet.traffic(now)}
 
     @app.websocket("/ws")
     async def ws(socket: WebSocket):

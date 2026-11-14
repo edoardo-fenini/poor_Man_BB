@@ -15,7 +15,7 @@ from terminal.events import FeedStatus
 from terminal.config import Config, load_config
 from terminal.brain.alerts import us_market_open
 from terminal.brain.conflicts import load_zones
-from terminal.feeds import crypto, finnhub, gdelt, onchain, rss, sec, volume, yahoo
+from terminal.feeds import crypto, finnhub, gdelt, onchain, rss, sec, ships, volume, yahoo
 from terminal.feeds.base import run_feed
 from terminal.prices import Prices
 from terminal.settings import load_settings
@@ -31,7 +31,8 @@ async def market_clock(name: str, bus: Bus) -> None:
         await asyncio.sleep(60)
 
 
-def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[Callable[[], Awaitable[None]]]:
+def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices,
+                fleet: ships.Fleet | None = None) -> list[Callable[[], Awaitable[None]]]:
     """Every background feed, each wrapped so it restarts by itself."""
 
     def tracked() -> list[Symbol]:
@@ -81,6 +82,10 @@ def build_feeds(config: Config, store: Store, bus: Bus, prices: Prices) -> list[
         feeds["eth-onchain"] = lambda: onchain.eth_poll(bus, config.etherscan_key, prices, settings)
     else:
         disabled("eth-onchain", "ETHERSCAN_KEY", "free key at etherscan.io/myapikey")
+    if config.aisstream_key and fleet is not None:
+        feeds["ships"] = lambda: ships.stream(config.aisstream_key, fleet)
+    else:
+        disabled("ships", "AISSTREAM_KEY", "free key at aisstream.io; the map shows no ships meanwhile")
     if config.sec_user_agent:
         feeds["sec-8k"] = lambda: sec.poll_8k(bus, config.sec_user_agent)
         feeds["sec-filings"] = lambda: sec.poll_filings(bus, config.sec_user_agent)
@@ -101,8 +106,8 @@ def main(argv: list[str]) -> int:
     if command != "run":
         print(f"unknown command: {command}\nusage: python -m terminal [run|doctor]")
         return 2
-    store, bus, prices = Store(config.db_path), Bus(), Prices()
-    app = create_app(config, store, bus, prices, feeds=build_feeds(config, store, bus, prices))
+    store, bus, prices, fleet = Store(config.db_path), Bus(), Prices(), ships.Fleet()
+    app = create_app(config, store, bus, prices, feeds=build_feeds(config, store, bus, prices, fleet), fleet=fleet)
     print(f"Terminal running at http://{config.host}:{config.port}  (Ctrl+C to stop)", flush=True)
     server = uvicorn.Server(uvicorn.Config(app, host=config.host, port=config.port, log_level="warning",
                                            timeout_graceful_shutdown=2))
